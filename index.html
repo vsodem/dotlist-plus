@@ -181,7 +181,7 @@
     }
     .task-text { flex: 1; }
     .task-meta { font-size: 0.75rem; color: #888; }
-    .task-delete {
+    .task-complete, .task-delete {
       background: transparent;
       border: 0;
       cursor: pointer;
@@ -190,8 +190,10 @@
       padding: 0 0.2rem;
       visibility: hidden;
     }
+    ul.tasks li:hover .task-complete,
     ul.tasks li:hover .task-delete { visibility: visible; }
     ul.tasks li.done .task-delete { visibility: visible; }
+    .task-complete:hover { color: #2e8b57; }
     .task-delete:hover { color: #c33; }
 
     /* ---------- Footer ---------- */
@@ -247,6 +249,7 @@
       <li>At the end of the review, you'll have a chain of tasks which you work from the bottom up</li>
       <li>As you mark items off, Dot List will surface the next item in your chain</li>
       <li>Note: you do not have to complete the entire task! At a minimum make a start on it. You can always click "Started, not done" and push it back onto the bottom of the list for next time.</li>
+      <li>Did something out of order? Hover any task and click its ✓ to mark it done on the spot.</li>
     </ol>
     <p>Want more or different features? Make your own version by grabbing the source in your browser; it's plain JavaScript + HTML. Or <a href="https://github.com/bsoule/dotlist">fork it up</a> from GitHub.</p>
   </div>
@@ -543,6 +546,15 @@ function renderList() {
     text.textContent = t.text;
     li.appendChild(text);
 
+    if (t.doneAt === null) {
+      const done = document.createElement('button');
+      done.className = 'task-complete';
+      done.textContent = '✓';
+      done.title = 'Mark this task done';
+      done.onclick = () => completeTask(t.id);
+      li.appendChild(done);
+    }
+
     const del = document.createElement('button');
     del.className = 'task-delete';
     del.textContent = '×';
@@ -671,6 +683,41 @@ function completeCurrent({ partial }) {
       state.mode = 'idle';
       recomputeAnchor();
     }
+  }
+  save();
+  render();
+}
+
+// Mark any task done by id — the per-item "✓" button. Unlike
+// completeCurrent, the task needn't be the chain's next-up; this is for
+// things that got done out of order.
+function completeTask(id) {
+  const t = state.tasks.find(t => t.id === id);
+  if (!t || t.doneAt !== null) return;
+  t.doneAt = Date.now();
+  t.dotted = false;
+
+  if (state.mode === 'reviewing') {
+    recomputeAnchor();
+    // If we completed the current candidate (or reanchoring dotted it),
+    // advance to the next comparable task; if none remain, review is over.
+    const cand = state.tasks[state.reviewCursor];
+    if (!cand || cand.doneAt !== null || cand.dotted) {
+      const next = nextCandidateIndex(state.reviewCursor);
+      if (next === -1) { finishReview(); return; }
+      state.reviewCursor = next;
+    }
+  } else if (state.mode === 'executing') {
+    // Same tail logic as completeCurrent: an emptied chain ends execution.
+    // (No reanchoring mid-chain — that would dot an unreviewed task.)
+    if (chain().length === 0) {
+      state.mode = activeTasks().length ? 'idle' : 'empty';
+      recomputeAnchor();
+    }
+  } else {
+    // idle: reanchor in case we completed the anchor.
+    recomputeAnchor();
+    if (activeTasks().length === 0) state.mode = 'empty';
   }
   save();
   render();

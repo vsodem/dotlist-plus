@@ -1,4 +1,10 @@
-# Cloud workflow
+# Local repository instructions
+
+This is the user's editable `AGENTS.md` for local and cloud Codex sessions.
+Cloud sessions also read `.cloud/AGENTS.md` for environment and workflow context.
+That file references this file directly; there is no generated copy to maintain.
+
+## Cloud workflow
 
 The user has given standing authorization to commit and push our changes to
 `codex/swift` in `vsodem/dotlist-plus` when working in a cloud environment.

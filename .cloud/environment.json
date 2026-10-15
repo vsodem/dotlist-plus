@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "recordedOn": "2026-10-15",
+  "repository": "https://github.com/vsodem/dotlist-plus.git",
+  "remote": "origin",
+  "sharedBranch": "codex/swift",
+  "cloud": {
+    "provider": "Codex managed cloud environment",
+    "environmentId": "ccarenv_b64_Y2NhcmVudl9hMGM0YTUwYTc2ZDQ4MTkxYjNhYTUwNDUwN2U3OGFmNw",
+    "operatingSystem": "Linux",
+    "workspaceRoot": "/workspace",
+    "checkoutPath": "/workspace/dotlist-plus",
+    "appleSDKsAvailable": false
+  },
+  "behaviorSpecification": "docs/APP_RULES.md",
+  "notes": "Reference snapshot only. Verify the active environment and checkout in future sessions. Git commits and pushes carry steering between local and cloud checkouts; this file does not configure or synchronize machines.",
+  "localInstructions": "AGENTS.md",
+  "cloudInstructions": ".cloud/AGENTS.md"
+}

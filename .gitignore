@@ -1,6 +1,17 @@
+# Swift / Xcode
 .build/
 .swiftpm/
 DerivedData/
 *.xcuserstate
 xcuserdata/
+
+# Python (scripts/, and the web branches' serve.py tests)
+__pycache__/
+
+# Node / Playwright (web branches share this working tree)
+node_modules/
+test-results/
+playwright-report/
+
+# macOS
 .DS_Store

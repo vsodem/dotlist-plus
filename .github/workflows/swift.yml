@@ -1,0 +1,23 @@
+name: Swift and Apple builds
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    container: swift:6.0
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test
+  apple:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test
+      - name: Build iPhone simulator app
+        run: xcodebuild -project Apple/DotList.xcodeproj -scheme DotList -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/DotList-iOS CODE_SIGNING_ALLOWED=NO build
+      - name: Build native Mac app
+        run: xcodebuild -project Apple/DotList.xcodeproj -scheme DotList -destination 'platform=macOS' -derivedDataPath /tmp/DotList-Mac CODE_SIGNING_ALLOWED=NO build

@@ -198,6 +198,8 @@
       font-size: 0.85rem;
       color: #888;
       display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
       justify-content: space-between;
       align-items: center;
     }
@@ -262,6 +264,7 @@
 
   <footer>
     <button class="linklike" id="clear-done-btn">Clear completed</button>
+    <button class="linklike" id="export-native-btn">Export for native app</button>
     <span>based on Mark Forster's <a href="https://blog.beeminder.com/forster" target="_blank" rel="noopener">Final Version</a></span>
   </footer>
 
@@ -753,6 +756,23 @@ function submitAdd() {
 
 document.getElementById('reset-btn').onclick = resetAll;
 document.getElementById('clear-done-btn').onclick = clearCompleted;
+
+// Copy the original saved data without migrating or changing browser storage.
+document.getElementById('export-native-btn').onclick = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY) || JSON.stringify(state);
+    const url = URL.createObjectURL(new Blob([raw], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'dotlist-v1.json';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) {
+    alert('Could not export your saved list. Your browser data has not been changed.');
+  }
+};
 
 const $help = document.getElementById('help-panel');
 const $helpBtn = document.getElementById('help-btn');

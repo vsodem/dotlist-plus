@@ -10,6 +10,9 @@ struct SettingsView: View {
     @State private var pendingImport: LoadedList?
     @State private var confirmingImport = false
     @State private var confirmingErase = false
+    @State private var choices: [String: MergeChoice] = [:]
+    @State private var wholeListChoice: MergeChoice?
+    @State private var confirmingWholeList = false
 
     var body: some View {
         Form {
@@ -18,20 +21,54 @@ struct SettingsView: View {
                 Text("Projects, broad tasks, and prerequisites extend the Final Version method. Your dots always belong to available actions.")
                     .font(.footnote).foregroundStyle(.secondary)
             } header: { Text("Your method") }
+            Section("\(store.syncServiceName) sync") {
+                Text(store.syncStatus)
+                if store.syncing { ProgressView("Syncing…") }
+                Button("Sync now") { Task { await store.syncNow() } }
+                    .disabled(!store.ready || store.syncing)
+                Text("One personal list per \(store.syncServiceName) account. Changes save on this device first. Each account keeps a separate list.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+            if !store.conflicts.isEmpty {
+                Section("Resolve sync conflicts") {
+                    Text("Both versions are saved until you choose. Other compatible changes will be kept.")
+                    ForEach(store.conflicts) { conflict in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(conflict.title).font(.headline)
+                            Text("This device: " + conflict.localDescription)
+                            Text("\(store.syncServiceName): " + conflict.remoteDescription)
+                            Picker("Keep", selection: Binding<MergeChoice?>(
+                                get: { choices[conflict.id] }, set: { choices[conflict.id] = $0 })) {
+                                Text("Choose a version").tag(nil as MergeChoice?)
+                                Text("This device").tag(Optional(MergeChoice.local))
+                                Text("\(store.syncServiceName)").tag(Optional(MergeChoice.remote))
+                            }
+                        }
+                    }
+                    Button("Save conflict choices") { Task { await store.resolve(choices) } }
+                        .disabled(store.conflicts.contains { choices[$0.id] == nil } || store.syncing)
+                    Button("Use this device's complete list…") {
+                        wholeListChoice = .local; confirmingWholeList = true
+                    }
+                    Button("Use \(store.syncServiceName)'s complete list…") {
+                        wholeListChoice = .remote; confirmingWholeList = true
+                    }
+                }
+            }
             Section {
                 Button("Export backup", systemImage: "square.and.arrow.up") {
                     do {
-                        document = BackupDocument(data: try DotListFile.encode(store.state))
+                        document = BackupDocument(data: try BackupCodec.encode(store.state))
                         exporting = true
                     } catch { store.error = error.localizedDescription }
                 }.disabled(!store.ready)
                 Button("Import backup or browser list", systemImage: "square.and.arrow.down") { importing = true }
-                Text("Lists are saved on this device after every successful change. There are no accounts or automatic sync between iPhone and Mac. Export and import a backup to transfer your list.")
+                Text("Lists save on this device before syncing with \(store.syncServiceName). JSON backups remain portable and include tasks, projects, order, and review progress. Recovery copies stay on this device.")
                     .font(.footnote).foregroundStyle(.secondary)
                 Text("For the browser demo, use Export for native app in its footer. Import that JSON file here. The browser's original data is left untouched.")
                     .font(.footnote).foregroundStyle(.secondary)
                 if !store.ready {
-                    Button("Retry opening saved list") { store.reload() }
+                    Button("Retry opening saved list") { Task { await store.reload() } }
                     Text("You can recover by importing a valid backup. The unreadable saved file will be copied before replacement.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
@@ -42,6 +79,14 @@ struct SettingsView: View {
                     .font(.footnote).foregroundStyle(.secondary)
             } header: { Text("Start over") }
         }
+        .confirmationDialog("Replace the merged list with one complete version?", isPresented: $confirmingWholeList, titleVisibility: .visible) {
+            Button("Use complete list", role: .destructive) {
+                if let wholeListChoice { Task { await store.resolve(["list.structure": wholeListChoice]) } }
+            }
+        } message: {
+            Text("Changes found only in the other version will be removed from the synced list. A recovery copy stays on this device.")
+        }
+        .onChange(of: store.conflicts) { _, _ in choices = [:] }
         .formStyle(.grouped)
         .navigationTitle("Settings")
         .fileExporter(isPresented: $exporting, document: document, contentType: .json, defaultFilename: "DotList-backup") { result in
@@ -52,22 +97,22 @@ struct SettingsView: View {
                 let url = try result.get()
                 let access = url.startAccessingSecurityScopedResource()
                 defer { if access { url.stopAccessingSecurityScopedResource() } }
-                pendingImport = try DotListFile.decode(Data(contentsOf: url))
+                pendingImport = try BackupCodec.decode(Data(contentsOf: url))
                 confirmingImport = true
             } catch { store.error = "Import failed. Your current list is unchanged. \(error.localizedDescription)" }
         }
-        .confirmationDialog("Replace this device's list?", isPresented: $confirmingImport, titleVisibility: .visible) {
+        .confirmationDialog("Replace the synced list?", isPresented: $confirmingImport, titleVisibility: .visible) {
             Button("Replace with imported list", role: .destructive) {
-                if let pendingImport { store.replace(with: pendingImport) }
+                if let pendingImport { Task { await store.replace(with: pendingImport) } }
                 pendingImport = nil
             }
             Button("Cancel", role: .cancel) { pendingImport = nil }
         } message: {
-            Text("The import contains \(pendingImport?.state.tasks.count ?? 0) tasks and \(pendingImport?.state.projects.count ?? 0) projects. A copy of the current saved file will be kept on this device.")
+            Text("The import contains \(pendingImport?.state.tasks.count ?? 0) tasks and \(pendingImport?.state.projects.count ?? 0) projects. This replaces the list and syncs the change to your other devices using this \(store.syncServiceName) account. Concurrent edits may need conflict choices. A recovery copy stays on this device.")
         }
-        .confirmationDialog("Erase all Dot List data on this device?", isPresented: $confirmingErase, titleVisibility: .visible) {
-            Button("Erase all data", role: .destructive) { store.apply(.eraseAll) }
-        } message: { Text("Export a backup first if you want an easily accessible copy. This clears your active tasks, projects, and dots. Local recovery backups are kept; other devices are not affected.") }
+        .confirmationDialog("Erase the synced Dot List?", isPresented: $confirmingErase, titleVisibility: .visible) {
+            Button("Erase all data", role: .destructive) { Task { await store.apply(.eraseAll) } }
+        } message: { Text("Export a backup first if you want an easily accessible copy. This clears your active tasks, projects, and dots. This erasure syncs to other devices using this \(store.syncServiceName) account. Concurrent edits may need conflict choices. Local recovery backups are kept.") }
     }
 }
 

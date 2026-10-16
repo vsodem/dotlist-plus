@@ -31,14 +31,14 @@ def render(value, indent=0):
 
 source_builds = []
 groups = []
-for folder, path in [("App", "Apple/DotList"), ("Core", "Sources/DotListCore")]:
+for folder, path in [("App", "Apple/DotList"), ("Core", "Sources/DotListCore"), ("Storage", "Sources/DotListStorage")]:
     children = []
     for file in sorted((ROOT / path).glob("*.swift")):
         ref = add(str(file.relative_to(ROOT)), "PBXFileReference", lastKnownFileType="sourcecode.swift", path=file.name, sourceTree="<group>")
         children.append(ref)
         source_builds.append(add("build-" + str(file.relative_to(ROOT)), "PBXBuildFile", fileRef=ref))
     groups.append(add(folder, "PBXGroup", children=children, name=folder,
-                      path="DotList" if folder == "App" else "../Sources/DotListCore", sourceTree="<group>"))
+                      path="DotList" if folder == "App" else "../" + path, sourceTree="<group>"))
 
 resources = []
 resource_refs = []
@@ -71,10 +71,15 @@ for name in ["Debug", "Release"]:
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
         "CODE_SIGN_STYLE": "Automatic",
+        "DEVELOPMENT_TEAM": "NYZA33Z8N5",
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphone*]": "DotList/DotList-iOS.entitlements",
+        "APS_ENVIRONMENT": "development" if name == "Debug" else "production",
+        "ICLOUD_CONTAINER_ENVIRONMENT": "Development" if name == "Debug" else "Production",
         "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": "DotList/DotList.entitlements",
         "COMBINE_HIDPI_IMAGES": "YES", "CURRENT_PROJECT_VERSION": "1",
         "ENABLE_APP_SANDBOX": "YES", "ENABLE_HARDENED_RUNTIME": "YES",
         "ENABLE_USER_SELECTED_FILES": "readwrite", "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_FILE[sdk=iphone*]": "DotList/Info-iOS.plist",
         "INFOPLIST_KEY_CFBundleDisplayName": "Dot List",
         "INFOPLIST_KEY_LSApplicationCategoryType": "public.app-category.productivity",
         "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",
@@ -84,7 +89,7 @@ for name in ["Debug", "Release"]:
         "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad": "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight",
         "IPHONEOS_DEPLOYMENT_TARGET": "17.0", "MACOSX_DEPLOYMENT_TARGET": "14.0",
         "LD_RUNPATH_SEARCH_PATHS": ["$(inherited)", "@executable_path/Frameworks", "@executable_path/../Frameworks"],
-        "MARKETING_VERSION": "0.1.0", "PRODUCT_BUNDLE_IDENTIFIER": "com.example.DotList",
+        "MARKETING_VERSION": "0.1.0", "PRODUCT_BUNDLE_IDENTIFIER": "com.vsodem.DotList",
         "PRODUCT_NAME": "$(TARGET_NAME)", "SDKROOT": "auto",
         "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator macosx",
         "SUPPORTS_MACCATALYST": "NO", "SWIFT_EMIT_LOC_STRINGS": "YES",
@@ -94,7 +99,7 @@ for name in ["Debug", "Release"]:
 project_configuration = add("project-config", "XCConfigurationList", buildConfigurations=project_configs, defaultConfigurationIsVisible=0, defaultConfigurationName="Release")
 target_configuration = add("target-config", "XCConfigurationList", buildConfigurations=target_configs, defaultConfigurationIsVisible=0, defaultConfigurationName="Release")
 target = add("target", "PBXNativeTarget", buildConfigurationList=target_configuration, buildPhases=[sources, frameworks, resource_phase], buildRules=[], dependencies=[], name="DotList", productName="DotList", productReference=product, productType="com.apple.product-type.application")
-project = add("project", "PBXProject", attributes={"BuildIndependentTargetsInParallel": "YES", "LastSwiftUpdateCheck": "1600", "LastUpgradeCheck": "1600", "TargetAttributes": {target: {"CreatedOnToolsVersion": "16.0"}}}, buildConfigurationList=project_configuration, compatibilityVersion="Xcode 14.0", developmentRegion="en", hasScannedForEncodings=0, knownRegions=["en", "Base"], mainGroup=main_group, productRefGroup=products, projectDirPath="", projectRoot="", targets=[target])
+project = add("project", "PBXProject", attributes={"BuildIndependentTargetsInParallel": "YES", "LastSwiftUpdateCheck": "1600", "LastUpgradeCheck": "1600", "TargetAttributes": {target: {"CreatedOnToolsVersion": "16.0", "DevelopmentTeam": "NYZA33Z8N5", "SystemCapabilities": {"com.apple.iCloud": {"enabled": 1}, "com.apple.Push": {"enabled": 1}, "com.apple.BackgroundModes": {"enabled": 1}}}}}, buildConfigurationList=project_configuration, compatibilityVersion="Xcode 14.0", developmentRegion="en", hasScannedForEncodings=0, knownRegions=["en", "Base"], mainGroup=main_group, productRefGroup=products, projectDirPath="", projectRoot="", targets=[target])
 content = {"archiveVersion": 1, "classes": {}, "objectVersion": 56, "objects": objects, "rootObject": project}
 (PROJECT / "project.pbxproj").write_text("// !$*UTF8*$!\n" + render(content) + "\n")
 scheme_dir = PROJECT / "xcshareddata/xcschemes"

@@ -66,7 +66,7 @@ struct WorkView: View {
                             Menu {
                                 Button("Edit action", systemImage: "pencil") { editing = task }
                                 if TaskRules.available(task, in: state) {
-                                    Button("Make urgent", systemImage: "bolt") { store.apply(.urgent(task.id)) }
+                                    Button("Make urgent", systemImage: "bolt") { Task { await store.apply(.urgent(task.id)) } }
                                 } else {
                                     Button("Find prerequisite to make urgent", systemImage: "bolt") { blockedUrgent = task }
                                 }
@@ -86,7 +86,7 @@ struct WorkView: View {
                 Button { adding = true } label: { Label("Add action", systemImage: "plus") }
             }
         }
-        .disabled(!store.ready)
+        .disabled(!store.ready || store.saving || !store.conflicts.isEmpty)
         .sheet(isPresented: $adding) { TaskEditor(projectID: projectId) }
         .sheet(item: $editing) { TaskEditor(task: $0) }
         .sheet(item: $blockedUrgent) { UrgentPrerequisiteView(taskID: $0.id) }
@@ -137,7 +137,7 @@ struct UrgentPrerequisiteView: View {
                 Section("Available prerequisites") {
                     ForEach(TaskRules.availablePrerequisites(of: taskID, in: store.state)) { task in
                         Button {
-                            if store.apply(.urgent(task.id)) { dismiss() }
+                            Task { if await store.apply(.urgent(task.id)) { dismiss() } }
                         } label: { Label(TaskRules.label(task, in: store.state), systemImage: "bolt") }
                     }
                 }
@@ -198,6 +198,7 @@ struct ProjectEditor: View {
     @EnvironmentObject private var store: DotListStore
     @Environment(\.dismiss) private var dismiss
     let project: Project?
+    @State private var editingState: AppState?
     @State private var title: String
     @State private var deleting = false
     init(project: Project? = nil) {
@@ -215,18 +216,19 @@ struct ProjectEditor: View {
                     Text("A project can be deleted once all its work has been moved or removed.").font(.footnote).foregroundStyle(.secondary)
                 }
             }
+            .onAppear { if editingState == nil { editingState = store.state } }
             .navigationTitle(project == nil ? "New project" : "Edit project")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         let change: Change = project.map { .renameProject($0.id, title) } ?? .addProject(Project(title: title))
-                        if store.apply(change) { dismiss() }
+                        Task { if await store.apply(change, expectedState: editingState) { dismiss() } }
                     }.disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
             .confirmationDialog("Delete this project?", isPresented: $deleting, titleVisibility: .visible) {
-                Button("Delete project", role: .destructive) { if let project, store.apply(.deleteProject(project.id)) { dismiss() } }
+                Button("Delete project", role: .destructive) { Task { if let project, await store.apply(.deleteProject(project.id), expectedState: editingState) { dismiss() } } }
             }
         }
         #if os(macOS)

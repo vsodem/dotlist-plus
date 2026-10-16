@@ -9,9 +9,9 @@ Requirements: **Xcode 15 or newer**, iOS 17+, macOS 14+. No third-party app depe
 1. Open `Apple/DotList.xcodeproj` in Xcode.
 2. Select the **DotList** scheme.
 3. Choose an iPhone simulator and press Run. Choose **My Mac** to run the native Mac app.
-4. To install on your own iPhone, select your Apple development team under Signing & Capabilities and change `com.example.DotList` to your own unique bundle identifier. Connect the phone and choose it as the run destination.
+4. To install on your own iPhone, use the configured team `NYZA33Z8N5` and register `com.vsodem.DotList` with the `iCloud.com.vsodem.DotList` CloudKit container under Signing & Capabilities. A valid development certificate and provisioning profiles with iCloud and Push Notifications are required. Connect the phone and choose it as the run destination.
 
-The first launch starts with an empty list. On iPhone, use the Focus, All work, and Settings tabs. Mac uses a sidebar and a Dot List menu with keyboard shortcuts. The shared app also adapts to iPad.
+On first launch, an existing iCloud list downloads when available; a new account starts empty. On iPhone, use the Focus, All work, and Settings tabs. Mac uses a sidebar and a Dot List menu with keyboard shortcuts. The shared app also adapts to iPad.
 
 ## Use it
 
@@ -36,13 +36,20 @@ Settings → How Dot List works includes a plain-language guide and a bundled co
 
 ## Saving, backups, and browser migration
 
-The native app writes one version-2 JSON file after each successful change, inside its sandbox at `Application Support/DotList/state-v2.json`. The Mac location is normally under `~/Library/Containers/<bundle identifier>/Data/Library/Application Support/DotList/`.
+The native app atomically saves its list and durable sync state after each successful change in `Application Support/DotList/sync-state-v1.json`. It migrates the previous `state-v2.json` in the same sandbox once, preserving its IDs and valid review progress and retaining the original file. The Mac location is normally under `~/Library/Containers/<bundle identifier>/Data/Library/Application Support/DotList/`.
 
 - Quit and reopen to resume the exact valid review or chain; starting a new day does not reset anything.
 - Save failures are shown. The app keeps the previous state visible so an unsaved action is not mistaken for success.
 - Invalid task data is left untouched, and mutations are disabled until recovery. Invalid selection data is cleared with an explanation while preserving valid tasks.
-- Settings can export/import JSON backups between devices. **There is no automatic iCloud or other multi-device sync.** Import replaces the local list after confirmation; it does not merge.
-- Before import or erasure, the old file is copied to `backup-<ID>.json` in the same directory. These recovery copies stay local. Export first for a copy accessible through Files or Finder.
+- iCloud sync combines tasks, projects, order, dots, and valid review progress across Apple devices using the same account. Offline edits save locally and upload when connectivity returns. Settings shows status, conflicts, and **Sync now**.
+- Settings still exports/imports version-2 JSON and browser exports. Import and erasure affect the synced list after confirmation; concurrent changes may require conflict choices.
+- Before import or erasure, the old file is copied to `backup-<ID>.json` in the same directory. These recovery copies stay local and contain the full storage transaction, including account partitions. They are separate from portable version-2 exports. To restore a recovery copy, quit the app, preserve the current file, and replace `sync-state-v1.json` with the recovery copy. Export first for a portable copy accessible through Files or Finder.
+
+The first signed-in account adopts the existing local list once. Later accounts keep separate lists. Signing out opens a separate local list; signing back in restores that account's pending work. Temporary account lookup failures pause sync without switching lists. Local work created after signing out can be transferred explicitly by export/import.
+
+Independent edits merge automatically. Conflicting edits, deletion versus editing, or incompatible order require choices in Settings. Both versions remain saved until resolution. One-sided valid review progress continues on the other device; conflicting or invalidated progress resets with an explanation. If an upload's acknowledgement is lost and another device changes the list before retry, choose which version to keep; the app will not guess and resurrect deleted work.
+
+If upgrading an installation that used the old `com.example.DotList` bundle identifier, export a backup before switching identifiers: Apple gives the new identifier a different sandbox. Import that backup in the new app. In-place storage migration applies within the same sandbox.
 
 For existing browser users:
 
@@ -61,11 +68,18 @@ The old web demo still works by opening `index.html` or running `python3 -m http
 | `Sources/DotListCore/AppState.swift` | Version-2 data and explicit operations |
 | `Sources/DotListCore/TaskRules.swift` | Relationships, validation, progress, breakdown |
 | `Sources/DotListCore/SelectionRules.swift` | Pure validated state transitions |
-| `Sources/DotListCore/DotListFile.swift` | Atomic JSON persistence, migration, recovery |
-| `Apple/DotList/` | SwiftUI screens and the observable persistence adapter |
+| `Sources/DotListCore/BackupCodec.swift` | Independent browser/version-2 backup format |
+| `Sources/DotListCore/SyncInterfaces.swift` | Async storage/remote contracts and durable transactions |
+| `Sources/DotListCore/ListMerge.swift` | Pure three-way merge and conflict choices |
+| `Sources/DotListCore/SyncCoordinator.swift` | Serialized saves, merge/retry/account decisions |
+| `Sources/DotListStorage/JSONLocalStorage.swift` | Atomic JSON files, migration, recovery |
+| `Apple/DotList/CloudKitSync.swift` | Private CloudKit record/asset format, CKSyncEngine, retries |
+| `Apple/DotList/` | SwiftUI screens, injected observable store, and startup wiring |
 | `Tests/DotListCoreTests/AcceptanceTests.swift` | Behavioral acceptance checks |
 
-The Xcode app compiles the same core source files directly; the Swift package exposes them for tests without requiring SwiftUI. There are no duplicated algorithms. If Swift files are added or removed, run `python3 scripts/generate-xcode-project.py` to regenerate source membership. This also resets project settings to the script's defaults, so update the script if retaining a custom signing identifier.
+The Xcode app compiles the same core and storage source files directly; the Swift package exposes them for tests without requiring SwiftUI. There are no duplicated algorithms. If Swift files are added or removed, run `python3 scripts/generate-xcode-project.py` to regenerate source membership. The generator preserves the configured Apple team, identifiers, CloudKit and push entitlements, and iOS remote-notification background mode. Update the generator when changing those settings.
+
+To replace local storage, implement `LocalStorage` and change `DotListApp.init` wiring. To replace remote sync, implement `RemoteSync` and change that wiring and its display name. The coordinator sees only snapshots, strings, and opaque provider-scoped checkpoints. No rules or screens need provider-specific edits. CKSyncEngine handles incoming changes; explicit conditional CloudKit writes publish the one `ListSnapshot` record containing a `listJSON` asset. No restored engine outgoing queue can publish old data. Backups do not serialize provider metadata.
 
 ## Verification
 
@@ -100,4 +114,17 @@ Before treating a release as device-verified, check on both an iPhone simulator/
 7. Check large Dynamic Type, VoiceOver labels, dark mode, landscape, keyboard shortcuts, and Mac window resizing.
 8. Confirm Choose again preserves work and Erase all data requires confirmation.
 
-Current environment verification: core tests and Swift syntax can be checked on Linux. Apple SDK type checking, simulator launches, signing, and device interaction require Xcode on macOS and are not verified by Linux tests.
+### iCloud release verification
+
+Code verification on October 15, 2026: 60 core/storage/coordinator tests pass, and unsigned macOS and iOS simulator builds pass. **Live two-device sync is not verified.** The machine has zero valid signing identities; the signed iPhone build fails because no development profile exists for `com.vsodem.DotList`. Container/identifier registration and development/production schema availability remain unverified.
+
+With signing available:
+
+1. Register/associate the identifiers above with the configured team. Enable iCloud/CloudKit and Push Notifications, generate development profiles, and install signed builds on two devices signed into the same iCloud account.
+2. Use development builds to create the private `DotList` zone and `ListSnapshot` schema (`listJSON` Asset, `formatVersion` Int64, `account` String). Deploy the schema to Production in CloudKit Console before distributing Release builds; Debug uses Development and Release uses Production.
+3. Confirm an empty device downloads the list. Add different tasks offline on both, reconnect, and confirm convergence with no repeated uploads. Try independent field edits, conflicting titles, delete/edit, and differing order.
+4. Hand off a review and execution chain; advance differently offline on both and confirm reset notice. Restart during a pending upload and retry after a connection failure.
+5. Import and erase with confirmations and confirm propagation. Switch accounts and sign out/back in, including with pending edits and unresolved conflicts; confirm neither account receives the other's list.
+6. Check foreground and background incoming changes, Sync now, airplane mode recovery, unavailable/restricted account status, and a full-disk save failure.
+
+The shared remote contract in `CoordinatorTests` verifies compare-and-swap behavior against a fake provider. CloudKit's actual subscriptions, asset transfer, server revision conflicts, signing, and account-switch races require these signed-device checks; local tests do not establish them.

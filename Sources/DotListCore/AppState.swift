@@ -66,7 +66,7 @@ public struct RuleError: Error, LocalizedError, Equatable {
 }
 
 /// Every UI operation passes through one atomic, validated transition.
-public enum Change {
+public enum Change: Sendable {
     case addProject(Project)
     case renameProject(ID, String)
     case deleteProject(ID)

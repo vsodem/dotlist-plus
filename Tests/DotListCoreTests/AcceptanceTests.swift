@@ -215,38 +215,38 @@ final class AcceptanceTests: XCTestCase {
         var state = list([action("A"), action("B"), action("C")])
         try step(&state, .beginReview)
         try step(&state, .answer(true))
-        var restored = try DotListFile.decode(DotListFile.encode(state))
+        var restored = try BackupCodec.decode(BackupCodec.encode(state))
         XCTAssertEqual(restored.state, state)
         XCTAssertNil(restored.notice)
         try step(&state, .answer(false))
-        restored = try DotListFile.decode(DotListFile.encode(state))
+        restored = try BackupCodec.decode(BackupCodec.encode(state))
         XCTAssertEqual(restored.state, state)
         XCTAssertNil(restored.notice)
     }
 
     func testInvalidSelectionRecoversTasksButInvalidTasksFail() throws {
         let original = list([action("A"), action("B")])
-        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: DotListFile.encode(original)) as? [String: Any])
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: BackupCodec.encode(original)) as? [String: Any])
         object["selection"] = ["phase": "reviewing", "chain": ["Missing"], "candidates": ["A"], "cursor": 99]
-        let recovered = try DotListFile.decode(JSONSerialization.data(withJSONObject: object))
+        let recovered = try BackupCodec.decode(JSONSerialization.data(withJSONObject: object))
         XCTAssertEqual(recovered.state, original)
         XCTAssertNotNil(recovered.notice)
         object["actionOrder"] = ["Missing"]
-        XCTAssertThrowsError(try DotListFile.decode(JSONSerialization.data(withJSONObject: object)))
+        XCTAssertThrowsError(try BackupCodec.decode(JSONSerialization.data(withJSONObject: object)))
     }
 
     func testMalformedSelectionCanRecover() throws {
         let original = list([action("A")])
-        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: DotListFile.encode(original)) as? [String: Any])
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: BackupCodec.encode(original)) as? [String: Any])
         object["selection"] = "not a selection"
-        let restored = try DotListFile.decode(JSONSerialization.data(withJSONObject: object))
+        let restored = try BackupCodec.decode(JSONSerialization.data(withJSONObject: object))
         XCTAssertEqual(restored.state, original)
         XCTAssertNotNil(restored.notice)
     }
 
     func testLegacyImportPreservesIDsDatesAndDoesNotGuessRelationships() throws {
         let data = Data(#"{"tasks":[{"id":"old","text":"Groceries","doneAt":1234},{"id":"new","text":"Groceries","doneAt":null}],"mode":"executing","reviewCursor":null}"#.utf8)
-        let imported = try DotListFile.decode(data)
+        let imported = try BackupCodec.decode(data)
         XCTAssertEqual(imported.state.tasks.map(\.id), ["old", "new"])
         XCTAssertEqual(imported.state.task("old")?.completedAt, 1234)
         XCTAssertEqual(imported.state.actionOrder, ["new"])
@@ -255,35 +255,4 @@ final class AcceptanceTests: XCTestCase {
         XCTAssertNotNil(imported.notice)
     }
 
-    func testAtomicStorageAndCorruptSavePreservation() throws {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let file = DotListFile(url: directory.appendingPathComponent("state.json"))
-        let state = list([action("A")])
-        try file.save(state)
-        XCTAssertEqual(try file.load().state, state)
-        let bytes = try Data(contentsOf: file.url)
-        var invalid = state
-        invalid.actionOrder = []
-        XCTAssertThrowsError(try file.save(invalid))
-        XCTAssertEqual(try Data(contentsOf: file.url), bytes)
-        let corrupt = Data("corrupt".utf8)
-        try corrupt.write(to: file.url)
-        XCTAssertThrowsError(try file.load())
-        XCTAssertEqual(try Data(contentsOf: file.url), corrupt)
-        try file.backUpExisting()
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: directory.path).count, 2)
-    }
-
-    func testFailedWriteThrowsAndPreservesExistingFile() throws {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let blocker = directory.appendingPathComponent("not-a-directory")
-        let bytes = Data("keep me".utf8)
-        try bytes.write(to: blocker)
-        let file = DotListFile(url: blocker.appendingPathComponent("state.json"))
-        XCTAssertThrowsError(try file.save(list([action("A")])) )
-        XCTAssertEqual(try Data(contentsOf: blocker), bytes)
-    }
 }

@@ -4,24 +4,52 @@ import UniformTypeIdentifiers
 @MainActor
 final class DotListStore: ObservableObject {
     @Published private(set) var state = AppState()
+    @Published private(set) var scope = "local"
     @Published private(set) var ready = false
+    @Published private(set) var saving = false
+    @Published private(set) var syncing = false
+    @Published private(set) var syncStatus = "Opening saved list…"
+    @Published private(set) var conflicts: [MergeConflict] = []
     @Published var error: String?
     @Published var notice: String?
-    private let file: DotListFile
+    let syncServiceName: String
+    private let coordinator: SyncCoordinator
+    private var generation = -1
+    private var syncRequested = false
+    private var syncWaiters: [CheckedContinuation<Void, Never>] = []
+    private var observation: Task<Void, Never>?
 
-    init(file: DotListFile? = nil) {
-        self.file = file ?? DotListFile(url: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("DotList", isDirectory: true).appendingPathComponent("state-v2.json"))
-        reload()
+    init(storage: any LocalStorage, remote: any RemoteSync, syncServiceName: String) {
+        self.syncServiceName = syncServiceName
+        coordinator = SyncCoordinator(storage: storage, remote: remote)
+        observation = Task { [weak self] in
+            await self?.reload()
+            let requests = await remote.requests()
+            for await _ in requests {
+                guard !Task.isCancelled else { break }
+                await self?.syncNow()
+            }
+        }
     }
 
-    func reload() {
+    deinit { observation?.cancel() }
+
+    private func receive(_ view: SyncView) {
+        guard view.generation >= generation else { return }
+        generation = view.generation
+        scope = view.scope
+        state = view.state
+        syncStatus = view.status
+        conflicts = view.conflicts
+        notice = view.notice
+        ready = true
+    }
+
+    func reload() async {
         do {
-            let loaded = try file.load()
-            state = loaded.state
-            notice = loaded.notice
-            ready = true
+            receive(try await coordinator.load())
             error = nil
+            await syncNow()
         } catch {
             ready = false
             self.error = "Could not open your saved list. The original file has been kept. \(error.localizedDescription)"
@@ -29,21 +57,17 @@ final class DotListStore: ObservableObject {
     }
 
     @discardableResult
-    func apply(_ change: Change) -> Bool { apply([change]) }
+    func apply(_ change: Change, expectedState: AppState? = nil) async -> Bool { await apply([change], expectedState: expectedState) }
 
-    /// Save before publishing: a failed write never looks like a successful action.
     @discardableResult
-    func apply(_ changes: [Change]) -> Bool {
-        guard ready else { return false }
+    func apply(_ changes: [Change], expectedState: AppState? = nil) async -> Bool {
+        guard ready, !saving else { return false }
+        saving = true
+        defer { saving = false }
         do {
-            var next = state
-            for change in changes { next = try SelectionRules.transition(next, change) }
-            if changes.contains(where: { if case .eraseAll = $0 { return true }; return false }) {
-                try file.backUpExisting()
-            }
-            try file.save(next)
-            state = next
+            receive(try await coordinator.apply(changes, expectedScope: scope, expectedState: expectedState ?? state))
             error = nil
+            Task { await syncNow() }
             return true
         } catch {
             self.error = "Change not saved. \(error.localizedDescription)"
@@ -51,17 +75,44 @@ final class DotListStore: ObservableObject {
         }
     }
 
-    func replace(with loaded: LoadedList) {
+    func replace(with loaded: LoadedList) async {
+        guard !saving else { return }
+        saving = true
+        defer { saving = false }
         do {
-            try file.backUpExisting()
-            try file.save(loaded.state)
-            state = loaded.state
-            notice = loaded.notice ?? "Imported your list. A copy of the previous saved file was kept on this device."
-            ready = true
+            receive(try await coordinator.replace(with: loaded.state, notice: loaded.notice, expectedScope: scope))
             error = nil
-        } catch {
-            self.error = "Import not saved. Your existing data is unchanged. \(error.localizedDescription)"
+            Task { await syncNow() }
+        } catch { self.error = "Import not saved. \(error.localizedDescription)" }
+    }
+
+    func syncNow() async {
+        guard ready else { return }
+        if syncing {
+            syncRequested = true
+            await withCheckedContinuation { syncWaiters.append($0) }
+            return
         }
+        syncing = true
+        defer {
+            syncing = false
+            let waiting = syncWaiters
+            syncWaiters.removeAll()
+            for waiter in waiting { waiter.resume() }
+        }
+        repeat {
+            syncRequested = false
+            do { receive(try await coordinator.sync()) }
+            catch { self.error = error.localizedDescription }
+        } while syncRequested
+    }
+
+    func resolve(_ choices: [String: MergeChoice]) async {
+        do {
+            receive(try await coordinator.resolve(choices, expectedScope: scope))
+            error = nil
+            await syncNow()
+        } catch { self.error = error.localizedDescription }
     }
 
     var availableCount: Int { state.tasks.filter { TaskRules.available($0, in: state) }.count }

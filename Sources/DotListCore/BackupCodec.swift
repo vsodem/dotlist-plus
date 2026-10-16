@@ -1,14 +1,11 @@
 import Foundation
 
-public struct LoadedList {
+public struct LoadedList: Sendable {
     public let state: AppState
     public let notice: String?
 }
 
-public struct DotListFile {
-    public let url: URL
-    public init(url: URL) { self.url = url }
-
+public enum BackupCodec {
     public static func decode(_ data: Data) throws -> LoadedList {
         guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw RuleError("This is not a Dot List file. Your existing data has not been changed.")
@@ -49,23 +46,5 @@ public struct DotListFile {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return try encoder.encode(state)
-    }
-
-    public func load() throws -> LoadedList {
-        guard FileManager.default.fileExists(atPath: url.path) else { return LoadedList(state: AppState(), notice: nil) }
-        return try Self.decode(Data(contentsOf: url))
-    }
-
-    public func save(_ state: AppState) throws {
-        let data = try Self.encode(state)
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try data.write(to: url, options: .atomic)
-    }
-
-    /// Keep a copy before a deliberate replacement or recovery operation.
-    public func backUpExisting() throws {
-        guard FileManager.default.fileExists(atPath: url.path) else { return }
-        let backup = url.deletingLastPathComponent().appendingPathComponent("backup-\(UUID().uuidString).json")
-        try Data(contentsOf: url).write(to: backup, options: .atomic)
     }
 }

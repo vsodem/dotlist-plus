@@ -10,6 +10,7 @@ struct TaskEditor: View {
     @State private var projectId: ID?
     @State private var parentId: ID?
     @State private var prerequisites: Set<ID>
+    @State private var editingState: AppState?
     @State private var deleting = false
     @State private var breakingDown = false
     @State private var addingChild = false
@@ -93,13 +94,14 @@ struct TaskEditor: View {
                             Button("Break into substeps", systemImage: "list.bullet.indent") { breakingDown = true }.disabled(!idle)
                         }
                         if original.completedAt != nil {
-                            Button("Reopen action") { if store.apply(.reopen(original.id)) { dismiss() } }.disabled(!idle)
+                            Button("Reopen action") { Task { if await store.apply(.reopen(original.id), expectedState: editingState) { dismiss() } } }.disabled(!idle)
                         }
                         Button("Delete \(original.kind == .group ? "broad task" : "action")", role: .destructive) { deleting = true }.disabled(!idle)
                     }
                 }
             }
             .formStyle(.grouped)
+            .onAppear { if editingState == nil { editingState = store.state } }
             .navigationTitle(original == nil ? "Add work" : "Edit work")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -115,7 +117,7 @@ struct TaskEditor: View {
                 if newValue == .group { parentId = nil; prerequisites = [] }
             }
             .confirmationDialog("Delete this work?", isPresented: $deleting, titleVisibility: .visible) {
-                Button("Delete", role: .destructive) { if let original, store.apply(.deleteTask(original.id)) { dismiss() } }
+                Button("Delete", role: .destructive) { Task { if let original, await store.apply(.deleteTask(original.id), expectedState: editingState) { dismiss() } } }
             } message: { Text("Referenced prerequisites and broad tasks with children cannot be deleted.") }
             .sheet(isPresented: $breakingDown) {
                 if let original { BreakdownView(taskID: original.id, onComplete: { dismiss() }) }
@@ -140,7 +142,7 @@ struct TaskEditor: View {
         } else {
             changes.append(.addTask(WorkTask(title: title, kind: kind, projectId: projectId, parentId: parentId, prerequisiteIds: orderedPrerequisites)))
         }
-        if store.apply(changes) { dismiss() }
+        Task { if await store.apply(changes, expectedState: editingState) { dismiss() } }
     }
 }
 
@@ -151,6 +153,7 @@ struct BreakdownView: View {
     let taskID: ID
     let onComplete: () -> Void
     @State private var text = ""
+    @State private var editingState: AppState?
     @State private var confirming = false
     private var titles: [String] {
         text.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
@@ -173,6 +176,7 @@ struct BreakdownView: View {
                 }
                 if let error = store.error { Text(error).foregroundStyle(.red) }
             }
+            .onAppear { if editingState == nil { editingState = store.state } }
             .navigationTitle("Break into substeps")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -180,7 +184,7 @@ struct BreakdownView: View {
             }
             .confirmationDialog("Create \(titles.count) required substeps and transfer these relationships?", isPresented: $confirming, titleVisibility: .visible) {
                 Button("Apply breakdown") {
-                    if store.apply(.breakDown(taskID, titles: titles)) { dismiss(); onComplete() }
+                    Task { if await store.apply(.breakDown(taskID, titles: titles), expectedState: editingState) { dismiss(); onComplete() } }
                 }
             }
         }

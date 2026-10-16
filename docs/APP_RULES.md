@@ -193,7 +193,12 @@ Buy groceries has ID `groceries`; Cook lunch depends on `groceries`. After parti
 |---|---|
 | Task rules | Relationships, validation, availability, derived group progress |
 | Selection rules | Review snapshot, dots, Yes/No, completion, partial work, urgent insertion, choosing again |
-| Interface and storage | Labels, buttons, blocked explanations, saving and restoring state |
+| List merge | Baseline-relative task fields, relationship units, ordering, review handoff, conflicts |
+| Sync coordinator | Serialized changes, validation, account partitions, durable pending uploads and conflict decisions |
+| Local storage interface | Async load and atomic transaction save, including recovery copies |
+| Remote sync interface | Account/connection availability, snapshots, opaque revisions/checkpoints, conditional publication and sync requests |
+| Backup codec | Browser import and version-2 JSON import/export, independent of local storage |
+| UI store | Injected dependencies, durable list state, actions, status and conflict choices |
 
 Task and selection functions accept state and an action, and return the next state or a clear validation error. They must not read the interface or storage. Apply each change as one state transition, then save and render it. This makes the rules testable without an Apple device and editable without redesigning the UI.
 
@@ -215,13 +220,37 @@ Persist the entire state after a successful transition. On reload, validate it b
 4. Do not guess relationships between old completed entries and similarly named unfinished copies.
 5. Begin idle with no dots and explain the one-time selection reset. Future version-2 reloads resume normally.
 
-The native file is `Application Support/DotList/state-v2.json` within the app's sandbox. Version-2 JSON backups transfer between iPhone and Mac; there is no automatic synchronization. Import replaces rather than merges. Original imported files remain untouched.
+### Local storage and backups
 
-Before replacing or erasing the native list, save an additional `backup-<ID>.json` beside the state file. An unreadable file is preserved too. These copies are recovery files, not a sync mechanism. Export before erasing to keep a copy accessible through Files or Finder. Hiding completed work changes only the display and never deletes its records.
+The JSON storage adapter atomically writes `Application Support/DotList/sync-state-v1.json` inside the sandbox. Its transaction contains account-separated lists, the last shared snapshot, pending work, outgoing upload attempts, retained conflict inputs, and provider-scoped opaque checkpoints. The adapter alone owns paths and local encoding. On first load it migrates `state-v2.json`, preserving task IDs and valid review progress, and saves the transaction before returning. The original file remains untouched. An invalid transaction is preserved for recovery rather than silently replaced.
+
+`BackupCodec` imports browser exports and version-2 JSON, and exports version-2 JSON. Local storage changes must not change this format. Before import, erasure, or conflict resolution, save `backup-<ID>.json` beside the local state. These new recovery files contain the complete local transaction, including inactive accounts; they are distinct from portable version-2 exports. To recover one manually, quit the app, preserve the current transaction, and restore the recovery file as `sync-state-v1.json`. Importing a valid portable backup can recover an unreadable transaction after confirmation; its unreadable bytes are retained in a recovery copy.
+
+### Sync and merge
+
+One personal list belongs to each iCloud account. CloudKit stores one complete validated snapshot as a JSON asset. CKSyncEngine handles incoming changes and subscription state. Conditional CloudKit saves publish only coordinator-approved snapshots; the engine never restores queued outgoing writes. CloudKit records, assets, retries, and engine serialization stay inside its adapter. Core rules and merge code have no filesystem, SwiftUI, or CloudKit dependency.
+
+The coordinator serializes mutations across asynchronous saves and network operations. It validates and saves locally before showing success, and persists the merge plus an outgoing attempt before uploading. Failed local saves leave the previous list visible. Offline changes remain usable and pending; foreground activation, connection recovery, remote notifications, and Settings → Sync now request synchronization. CloudKit schedules background delivery; immediate delivery is not guaranteed.
+
+Merge each incoming snapshot against the last shared version. Combine independent task/project IDs and compatible field edits. A task's kind, project, parent, and prerequisites form one relationship unit. Incompatible edits to the same field, deletion versus editing, and incompatible action ordering need explicit choices. Preserve both snapshots until resolution, even if another sync occurs. Resolve compatible changes together, validate the resulting list, and only then save and publish. If relationship combinations are invalid, offer an explicit complete-list choice, warning that changes found only in the other version will be removed. Complete-list choices retain a recovery copy.
+
+Action order is separate from record-array order. Merge baseline-relative order constraints; insert independent additions next to their preceding action. Record-array order follows the shared snapshot to avoid endless uploads after two devices add different records. First sync uses task/project IDs to combine existing lists; incompatible records require choices. An empty installation downloads the shared list.
+
+Preserve valid one-sided dots, phase, candidates, and cursor. Identical review progress is compatible. If both devices advance differently, or the merged tasks invalidate selected/candidate actions, clear dots and show an explanation that a new review is needed. Task changes themselves remain preserved.
+
+An upload can succeed while its acknowledgement or subsequent local save fails. A matching remote snapshot on retry confirms that attempt. If its revision and contents have both changed since the attempt, ask which complete list to retain. Do not guess whether the intervening device saw the attempted upload: guessing can resurrect deleted work. No unbounded remote history is required.
+
+### Accounts, imports, and erasure
+
+The first confirmed account adopts this installation's unbound local list once. A different account gets its own saved partition, initially empty, and never receives another account's list automatically. Signing out opens a separate device-local list. Switching back restores that account's pending edits and conflicts. A temporary account lookup failure keeps the current partition open and pauses sync. Changes made to the separate local list after the first adoption stay local; transferring them to an account requires an explicit export/import.
+
+Editors close when the account changes. A save also checks the list snapshot shown when an editor opened; a downloaded change requires reopening the editor. Focus actions check the displayed state after waiting for any in-flight sync, so Done or a review answer cannot apply to a different task. Queued mutations also carry an account scope and are rejected if it no longer matches. Provider IDs scope account partitions and checkpoints, so swapping providers cannot reinterpret another provider's metadata.
+
+Import replaces the currently visible list after confirmation, keeps recovery bytes, and participates in sync. Erasure clears tasks, projects, dots, and review in that list and syncs the deletion. Confirmations explicitly explain effects on other devices using the same account. Concurrent remote changes still follow merge/conflict rules; import or erasure does not silently discard unseen conflicting edits. Inactive accounts and recovery files are not erased. Hiding completed work changes only the display.
 
 ## 10. Acceptance checks
 
-These scenarios are implemented as behavior tests in `Tests/DotListCoreTests/AcceptanceTests.swift`.
+These scenarios are covered by the acceptance, merge, coordinator, and storage tests in `Tests/DotListCoreTests/`. Coordinator tests use in-memory storage and a fake remote without files, Apple services, or an iCloud account. Shared storage contracts also run against the JSON adapter; the remote contract harness checks revision conflicts against an isolated fake provider.
 
 | Scenario | Required result |
 |---|---|
@@ -243,13 +272,28 @@ These scenarios are implemented as behavior tests in `Tests/DotListCoreTests/Acc
 | Choose again | Only selection state clears; tasks and their order survive. |
 | Invalid saved data or failed save | User sees the problem; existing saved data is not erased. |
 
+| Offline edit then restart | Saved list and pending work resume; reconnect publishes once. |
+| Independent edits and additions | Compatible fields and all new IDs survive; repeated sync converges. |
+| Delete versus edit or conflicting order | Both versions stay saved until explicit resolution. |
+| Invalid merged relationships | Publishing stops; validated complete-list choices are offered. |
+| One device advances review | Other device resumes its valid dots and cursor. |
+| Both devices advance differently | Tasks survive; dots reset with a new-review explanation. |
+| Successful upload, lost acknowledgement | Matching remote is recognized; later remote changes require an explicit choice. |
+| Local write fails after upload | Restart recovers pending attempt without duplicating the upload. |
+| Remote contains invalid relationships | Local list remains unchanged; sync reports the error. |
+| Import or erase | Confirmed replacement/deletion reaches the other device, subject to concurrent conflicts. |
+| Account switches or becomes unknown | Separate lists remain isolated; unknown status does not switch accounts. |
+| Concurrent async edits or stale editor | Saves serialize without lost updates; wrong-account or changed-state mutations fail. |
+| Existing local file migration | IDs and valid review survive, original bytes remain, new transaction resumes after restart. |
+| Replace storage/provider implementation | Change startup wiring; rules, coordinator, and screens remain unchanged. |
+
 Core tests validate behavior and storage. They do not substitute for the device-level interface checks in the README.
 
 ## 11. Editing this specification
 
 For behavioral changes, edit the relevant rule and its acceptance check together. Keep agreed decisions distinct from defaults. Do not let a UI shortcut silently introduce a different selection algorithm.
 
-Implementation is complete only when the rules, interface, migration, and acceptance checks agree. Scheduling, recurring work, multi-device sync, nested groups, automatic prerequisite generation, and alternative prerequisite conditions are outside this specification.
+Implementation is complete only when the rules, interface, migration, and acceptance checks agree. Scheduling, recurring work, shared lists, browser sync, nested groups, automatic prerequisite generation, and alternative prerequisite conditions are outside this specification.
 
 ### Where each rule is implemented
 
@@ -259,7 +303,7 @@ Implementation is complete only when the rules, interface, migration, and accept
 | What a review selects | Section 5 | `Sources/DotListCore/SelectionRules.swift` |
 | What partial work or urgency means | Sections 5–6 | `Sources/DotListCore/SelectionRules.swift` |
 | How relationships can change | Sections 5, 9 | `Sources/DotListCore/TaskRules.swift` |
-| Backup, resume, or import | Section 9 | `Sources/DotListCore/DotListFile.swift` |
+| Backup, resume, or import | Section 9 | `Sources/DotListCore/BackupCodec.swift` and `Sources/DotListStorage/JSONLocalStorage.swift` |
 | Wording and presentation | Examples and relevant rule | `Apple/DotList/` |
 
 A useful request is: “In section 6, change [current rule] to [new rule]. Here is an example of the result I want. Update the app and acceptance checks to match.” No Swift knowledge is needed to describe that change.

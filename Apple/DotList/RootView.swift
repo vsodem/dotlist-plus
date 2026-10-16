@@ -22,7 +22,7 @@ struct RootView: View {
                     if store.ready {
                         Button("Dismiss") { store.error = nil }
                     } else {
-                        Button("Retry") { store.reload() }
+                        Button("Retry") { Task { await store.reload() } }
                     }
                 }
                 .padding().background(.red.opacity(0.12))
@@ -120,11 +120,11 @@ struct FocusView: View {
         }
         .background(Color.accentColor.opacity(0.035))
         .navigationTitle("Focus")
-        .toolbar { Button { adding = true } label: { Label("Add action", systemImage: "plus") }.disabled(!store.ready) }
-        .disabled(!store.ready)
+        .toolbar { Button { adding = true } label: { Label("Add action", systemImage: "plus") }.disabled(!store.ready || store.saving || !store.conflicts.isEmpty) }
+        .disabled(!store.ready || store.saving || !store.conflicts.isEmpty)
         .sheet(isPresented: $adding) { TaskEditor() }
         .confirmationDialog("Choose again?", isPresented: $choosingAgain, titleVisibility: .visible) {
-            Button("Clear dots and return to idle", role: .destructive) { store.apply(.chooseAgain) }
+            Button("Clear dots and return to idle", role: .destructive) { Task { await store.apply(.chooseAgain) } }
         } message: { Text("Your tasks, relationships, completed work, and list order will stay as they are.") }
     }
 
@@ -133,7 +133,7 @@ struct FocusView: View {
             Text("Find your next action.").font(.largeTitle.bold())
             Text("\(store.availableCount) available \(store.availableCount == 1 ? "action" : "actions"). Compare them one at a time, then follow your dots.")
                 .foregroundStyle(.secondary)
-            Button("Next review", systemImage: "arrow.right") { store.apply(.beginReview) }
+            Button("Next review", systemImage: "arrow.right") { Task { await store.apply(.beginReview) } }
                 .buttonStyle(.borderedProminent).controlSize(.large)
         } else if store.unfinishedCount > 0 || store.needsBreakdown {
             Text("Make the next step clear.").font(.title.bold())
@@ -170,10 +170,10 @@ struct FocusView: View {
     }
 
     private var yesButton: some View {
-        Button("Yes, dot it") { store.apply(.answer(true)) }.buttonStyle(.borderedProminent).controlSize(.large)
+        Button("Yes, dot it") { Task { await store.apply(.answer(true)) } }.buttonStyle(.borderedProminent).controlSize(.large)
     }
     private var noButton: some View {
-        Button("No, skip") { store.apply(.answer(false)) }.buttonStyle(.bordered).controlSize(.large)
+        Button("No, skip") { Task { await store.apply(.answer(false)) } }.buttonStyle(.bordered).controlSize(.large)
     }
 
     @ViewBuilder private var executionPrompt: some View {
@@ -181,9 +181,9 @@ struct FocusView: View {
             Text("NEXT UP").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             Text(TaskRules.label(task, in: state)).font(.largeTitle.bold())
             Text("Make a start. You don’t have to finish it in one sitting.").foregroundStyle(.secondary)
-            Button("Done", systemImage: "checkmark") { store.apply(.complete) }
+            Button("Done", systemImage: "checkmark") { Task { await store.apply(.complete) } }
                 .buttonStyle(.borderedProminent).controlSize(.large)
-            Button("Worked on it, not finished", systemImage: "arrow.down.to.line") { store.apply(.partial) }
+            Button("Worked on it, not finished", systemImage: "arrow.down.to.line") { Task { await store.apply(.partial) } }
                 .buttonStyle(.bordered).controlSize(.large)
             Text("Unfinished work moves to the bottom. Anything it blocks stays blocked.")
                 .font(.footnote).foregroundStyle(.secondary)

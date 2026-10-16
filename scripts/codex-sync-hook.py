@@ -12,6 +12,16 @@ def handle(event):
             "hookEventName": event["hook_event_name"],
             "additionalContext": (
                 "Follow this project's AGENTS.md GitHub rules now, before task work: "
+                "run local inspection commands (git status, git diff, git rev-parse) "
+                "inside the sandbox. When .git is protected, run fetch, staging, "
+                "commit, merge, and push through exec_command with "
+                'sandbox_permissions: "require_escalated" from the first attempt. '
+                "Use that path for required network commands, including git ls-remote, "
+                "when network access is restricted. Request access before these commands; "
+                "do not first try a sandboxed Git write or restricted network call. "
+                "If access is denied, preserve local work and report the blockage "
+                "without repeating the same attempt. This does not grant permissions "
+                "or disable sandbox or approval controls. Then "
                 "inspect local changes, fetch origin/codex/swift, and safely sync. "
                 "Report any error immediately before modifying files. This applies "
                 "at chat startup and on every new prompt, including after inactivity. "

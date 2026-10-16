@@ -3,6 +3,7 @@ import pathlib
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 SCRIPT = pathlib.Path(__file__).with_name("codex-sync-hook.py")
@@ -84,6 +85,27 @@ class SyncHookTests(unittest.TestCase):
                 result = self.check(hook_event_name=event)
                 self.assertEqual(result["hookSpecificOutput"]["hookEventName"], event)
                 self.assertIn("before", result["hookSpecificOutput"]["additionalContext"])
+
+    def test_startup_requires_access_before_first_git_write(self):
+        for event in ("SessionStart", "UserPromptSubmit"):
+            with self.subTest(event=event):
+                context = self.check(hook_event_name=event)["hookSpecificOutput"]["additionalContext"]
+                for instruction in (
+                    "local inspection commands", "inside the sandbox", ".git is protected",
+                    "fetch", "staging", "commit", "merge", "push", "exec_command",
+                    'sandbox_permissions: "require_escalated"', "from the first attempt",
+                    "network access is restricted", "access is denied", "preserve local work",
+                    "report the blockage", "without repeating the same attempt",
+                ):
+                    self.assertIn(instruction, context)
+
+    def test_startup_never_runs_subprocesses(self):
+        with patch("subprocess.run", side_effect=AssertionError("Startup must not run commands")) as run:
+            for event in ("SessionStart", "UserPromptSubmit"):
+                with self.subTest(event=event):
+                    result = self.check(hook_event_name=event)
+                    self.assertEqual(result["hookSpecificOutput"]["hookEventName"], event)
+            run.assert_not_called()
 
 
 if __name__ == "__main__":

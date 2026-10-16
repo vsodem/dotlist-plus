@@ -1,5 +1,5 @@
 {
-  "description": "Sync this project with GitHub at chat start; verify publication before finishing.",
+  "description": "SessionStart reminder of project GitHub sync and publication rules; does not execute Git synchronization.",
   "hooks": {
     "SessionStart": [
       {

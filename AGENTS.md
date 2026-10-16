@@ -6,6 +6,21 @@ These rules apply only to this project. The canonical version is GitHub's
 `origin/codex/swift`. Work is not complete until its changes are committed,
 pushed to that branch, and verified against GitHub.
 
+### Git execution access
+
+Run local inspection commands, such as `git status`, `git diff`, and
+`git rev-parse`, inside the sandbox. When `.git` is protected, run fetch,
+staging, commit, merge, and push through `exec_command` with
+`sandbox_permissions: "require_escalated"` from the first attempt. Use that
+path for required network commands, including `git ls-remote`, when network
+access is restricted. Request the necessary access before running these
+commands; do not first try a sandboxed Git write or restricted network call.
+If access is denied, preserve local work and report the blockage without
+repeating the same attempt. This rule does not grant permissions or disable
+sandbox or approval controls.
+
+### Required synchronization and publication checks
+
 At the very beginning of every chat, when resuming after inactivity, and
 before executing any new request, perform this check before modifying files:
 
@@ -38,12 +53,14 @@ Before ending each task or chat:
    immediately. Preserve the work and clearly state that publishing is
    incomplete; do not silently leave commits only on the local computer.
 
-Project hooks in `.codex/hooks.json` repeat the start check on every new prompt
-(including returns after inactivity), and check GitHub and local changes at
-the end of each turn. They require Codex's one-time hook trust review via
-`/hooks` in the CLI. Until trusted, follow these instructions manually.
-The finish hook requests one corrective pass; if still blocked, it reports
-publishing as incomplete instead of looping or hiding the failure.
+Only `SessionStart` is registered in `.codex/hooks.json`. It returns these
+instructions as a startup reminder; it does not execute Git synchronization.
+The hook requires Codex's one-time trust review via `/hooks` in the CLI.
+Follow the checks above manually on every request and after completed work,
+whether or not the startup hook is trusted. No per-prompt or finish hook is
+currently registered. The script retains its publication-check code: if
+invoked, it requests one corrective pass, then reports incomplete publication
+instead of looping or hiding the failure.
 
 Use `docs/APP_RULES.md` as the editable behavior specification. Update the
 relevant rules and acceptance checks together when changing behavior.

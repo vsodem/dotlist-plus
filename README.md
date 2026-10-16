@@ -1,6 +1,6 @@
-# Dot List
+# Dot List Plus
 
-An iPhone-first, native SwiftUI app for choosing and doing one action at a time, with a native Mac interface. The shared rules implement the supplied Final Version architecture, including projects, broad tasks, prerequisites, fixed review snapshots, and reverse-chain execution.
+An iPhone-first, native SwiftUI app for choosing and doing one action at a time, with a native Mac interface. The shared rules implement a modified Final Version architecture, including projects, broad tasks, prerequisites, fixed review snapshots, and reverse-chain execution.
 
 ## Run the native app
 

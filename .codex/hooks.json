@@ -1,0 +1,41 @@
+{
+  "description": "Sync this project with GitHub at chat start and each prompt; verify publication before finishing.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/codex-sync-hook.py\"",
+            "timeout": 90,
+            "statusMessage": "Load project GitHub sync rules"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/codex-sync-hook.py\"",
+            "timeout": 90,
+            "statusMessage": "Require a fresh GitHub sync check"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/codex-sync-hook.py\"",
+            "timeout": 90,
+            "statusMessage": "Verify project changes are published to GitHub"
+          }
+        ]
+      }
+    ]
+  }
+}

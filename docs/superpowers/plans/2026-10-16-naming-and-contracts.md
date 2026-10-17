@@ -36,3 +36,5 @@ Linux cannot run locally because no Linux container runtime is installed. CI use
 Remaining release verification: register the new identifiers, obtain Apple development/distribution provisioning, deploy the CloudKit schema, and run signed two-device/account-switch/push/recovery scenarios. No result above claims these are complete.
 
 Publication follows repository rules: explicitly stage this task, commit, fetch again, push to `origin/codex/swift`, compare GitHub's branch SHA to local HEAD, and report any remaining local files.
+
+Post-publication CI exposed two environment differences: the Swift Linux image lacks Python, and the hosted Apple compiler rejects nested tasks that implicitly capture a weak variable from a callback. CI now installs Python before checks; the CloudKit callbacks bind a stable actor reference before creating each task. The failing CI compile is the regression evidence for this compatibility fix. Local tests/builds are rerun before publishing the follow-up; hosted CI must then verify the Linux and Apple environments.

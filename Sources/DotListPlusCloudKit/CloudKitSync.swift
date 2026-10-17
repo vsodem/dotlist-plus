@@ -130,7 +130,8 @@ public actor CloudKitSync: RemoteSync, CKSyncEngineDelegate {
         let pair = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
         listeners[id] = pair.continuation
         pair.continuation.onTermination = { [weak self] _ in
-            Task { await self?.removeListener(id) }
+            guard let self else { return }
+            Task { await self.removeListener(id) }
         }
         return pair.stream
     }
@@ -274,7 +275,9 @@ public actor CloudKitSync: RemoteSync, CKSyncEngineDelegate {
         }
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
-            Task { await self?.connectionChanged(path.status == .satisfied) }
+            guard let self else { return }
+            let available = path.status == .satisfied
+            Task { await self.connectionChanged(available) }
         }
         monitor.start(queue: DispatchQueue(label: "DotListPlus.iCloud.connection"))
         networkMonitor = monitor

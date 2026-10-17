@@ -11,6 +11,8 @@ jobs:
     container: swift:6.0
     steps:
       - uses: actions/checkout@v4
+      - name: Install Python for contract checks
+        run: apt-get update && apt-get install -y --no-install-recommends python3
       - run: python3 scripts/check-contracts.py
       - run: python3 scripts/test_contract_checks.py
       - run: python3 scripts/test_codex_sync_hook.py

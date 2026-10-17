@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     container: swift:6.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Python for contract checks
         run: apt-get update && apt-get install -y --no-install-recommends python3
       - run: python3 scripts/check-contracts.py
@@ -24,7 +24,7 @@ jobs:
   apple:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: python3 scripts/check-contracts.py
       - run: python3 scripts/test_contract_checks.py
       - run: python3 scripts/test_codex_sync_hook.py

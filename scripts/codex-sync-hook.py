@@ -22,11 +22,11 @@ def handle(event):
                 "If access is denied, preserve local work and report the blockage "
                 "without repeating the same attempt. This does not grant permissions "
                 "or disable sandbox or approval controls. Then "
-                "inspect local changes, fetch origin/codex/swift, and safely sync. "
+                "inspect local changes, fetch origin/main, and safely sync. "
                 "Report any error immediately before modifying files. This applies "
                 "at chat startup and on every new prompt, including after inactivity. "
                 "Before finishing, validate, commit and push completed work to "
-                "origin/codex/swift, then verify GitHub matches HEAD."
+                "origin/main, then verify GitHub matches HEAD."
             ),
         }}
 
@@ -40,9 +40,9 @@ def handle(event):
     problems = []
     try:
         local = git("rev-parse", "HEAD")
-        remote = git("ls-remote", "--exit-code", "origin", "refs/heads/codex/swift")
+        remote = git("ls-remote", "--exit-code", "origin", "refs/heads/main")
         if not remote or local != remote.split()[0]:
-            problems.append("Local HEAD does not match GitHub's codex/swift branch.")
+            problems.append("Local HEAD does not match GitHub's main branch.")
         changes = git("status", "--short", "--untracked-files=all")
         if changes:
             problems.append("Local files remain unpublished:\n" + changes)

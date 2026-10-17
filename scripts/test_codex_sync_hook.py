@@ -18,13 +18,13 @@ class SyncHookTests(unittest.TestCase):
         self.repo = self.root / "repo"
         self.git(self.root, "init", "--bare", str(self.remote))
         self.git(self.root, "clone", str(self.remote), str(self.repo))
-        self.git(self.repo, "checkout", "-b", "codex/swift")
+        self.git(self.repo, "checkout", "-B", "main")
         self.git(self.repo, "config", "user.name", "Hook Test")
         self.git(self.repo, "config", "user.email", "hook@example.test")
         (self.repo / "file.txt").write_text("initial\n")
         self.git(self.repo, "add", "file.txt")
         self.git(self.repo, "commit", "-m", "Initial")
-        self.git(self.repo, "push", "origin", "codex/swift")
+        self.git(self.repo, "push", "origin", "main")
 
     def git(self, cwd, *args):
         return subprocess.run(
@@ -65,10 +65,10 @@ class SyncHookTests(unittest.TestCase):
 
     def test_remote_change_is_detected_without_a_local_fetch(self):
         other = self.root / "other"
-        self.git(self.root, "clone", "-b", "codex/swift", str(self.remote), str(other))
+        self.git(self.root, "clone", "-b", "main", str(self.remote), str(other))
         self.git(other, "-c", "user.name=Hook Test", "-c", "user.email=hook@example.test",
                  "commit", "--allow-empty", "-m", "Remote update")
-        self.git(other, "push", "origin", "codex/swift")
+        self.git(other, "push", "origin", "main")
         result = self.check()
         self.assertEqual(result["decision"], "block")
         self.assertIn("GitHub", result["reason"])

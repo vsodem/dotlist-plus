@@ -73,6 +73,7 @@ Only absence of the new file starts empty. Old directories, backups and cloud co
 - New storage or provider: implement Application's existing contract, pass its shared contract suite and change startup wiring. Keep domain rules/screens unchanged.
 - New command: extend ListChange, its owning rules/coordinator behavior and acceptance tests.
 - New screen/platform: use commands/snapshots; keep platform behavior outside Core.
+- New theme: edit UI's `DesignSystem` values/styles and follow [THEMES.md](THEMES.md). RootView injects the theme above navigation and sheets; themes cannot depend on storage/provider or mutate work state.
 - New persisted relationship: change APP_RULES, validation, merge policy, format version and migration tests together.
 - New dependency: update this graph and `scripts/check-contracts.py` explicitly.
 

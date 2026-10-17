@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 
 @MainActor
 struct SettingsView: View {
+    @Environment(\.appTheme) private var theme
     @EnvironmentObject private var store: DotListPlusStore
     @State private var importing = false
     @State private var exporting = false
@@ -21,9 +22,9 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section {
-                NavigationLink { RulesView() } label: { Label("How Dot List Plus works", systemImage: "book") }
+                NavigationLink { RulesView() } label: { Label("How Dot List Plus works", systemImage: theme.icons.help) }
                 Text("Projects, outcomes, and prerequisites extend the Final Version method. Your dots always belong to available actions.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(theme.typography.footnote).foregroundStyle(theme.colors.secondaryText)
             } header: { Text("Your method") }
             Section("\(store.syncServiceName) sync") {
                 Text(store.syncStatus)
@@ -31,14 +32,14 @@ struct SettingsView: View {
                 Button("Sync now") { Task { await store.syncNow() } }
                     .disabled(!store.ready || store.syncing)
                 Text("One personal list per \(store.syncServiceName) account. Changes save on this device first. Each account keeps a separate list.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(theme.typography.footnote).foregroundStyle(theme.colors.secondaryText)
             }
             if !store.conflicts.isEmpty {
                 Section("Resolve sync conflicts") {
                     Text("Both versions are saved until you choose. Choosing a complete list removes changes found only in the other version. A recovery copy stays on this device.")
                     ForEach(store.conflicts) { conflict in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(conflict.title).font(.headline)
+                        VStack(alignment: .leading, spacing: theme.layout.compactGap) {
+                            Text(conflict.title).font(theme.typography.headline)
                             Text("This device: " + conflict.localDescription)
                             Text("\(store.syncServiceName): " + conflict.remoteDescription)
                             Picker("Keep", selection: Binding<MergeChoice?>(
@@ -60,25 +61,25 @@ struct SettingsView: View {
                 }
             }
             Section {
-                Button("Export backup", systemImage: "square.and.arrow.up") {
+                Button("Export backup", systemImage: theme.icons.export) {
                     do {
                         document = BackupDocument(data: try BackupCodec.encode(store.state))
                         exporting = true
                     } catch { store.error = error.localizedDescription }
                 }.disabled(!store.ready)
-                Button("Import backup", systemImage: "square.and.arrow.down") { confirmationState = store.state; confirmationScope = store.scope; importing = true }.disabled(!store.ready)
+                Button("Import backup", systemImage: theme.icons.importBackup) { confirmationState = store.state; confirmationScope = store.scope; importing = true }.disabled(!store.ready)
                 Text("Lists save on this device before syncing with \(store.syncServiceName). JSON backups remain portable and include work items, projects, order, and review progress. Recovery copies stay on this device.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(theme.typography.footnote).foregroundStyle(theme.colors.secondaryText)
                 if !store.ready {
                     Button("Retry opening saved list") { Task { await store.reload() } }
                     Text("The saved file is incompatible or unreadable. Keep it intact and restore a valid local-store recovery copy separately.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(theme.typography.footnote).foregroundStyle(theme.colors.secondaryText)
                 }
             } header: { Text("Data & backups") }
             Section {
                 Button("Erase current list", role: .destructive) { confirmationState = store.state; confirmationScope = store.scope; confirmingErase = true }.disabled(!store.ready)
                 Text("This clears the active projects, work items, and selections. Local recovery backups are kept. To clear only the dots, use Choose again in Focus.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(theme.typography.footnote).foregroundStyle(theme.colors.secondaryText)
             } header: { Text("Start over") }
         }
         .confirmationDialog("Replace the merged list with one complete version?", isPresented: $confirmingWholeList, titleVisibility: .visible) {
@@ -90,6 +91,7 @@ struct SettingsView: View {
         }
         .onChange(of: store.conflicts) { _, _ in choices = [:] }
         .formStyle(.grouped)
+        .themeScreen()
         .navigationTitle("Settings")
         .fileExporter(isPresented: $exporting, document: document, contentType: .json, defaultFilename: ProductIdentity.backupFile) { result in
             if case .failure(let error) = result { store.error = "Export failed. \(error.localizedDescription)" }
@@ -146,12 +148,14 @@ struct RulesView: View {
                 NavigationLink("Read the full specification") { SpecificationView() }
             }
         }
+        .themeScreen()
         .navigationTitle("How it works")
     }
 }
 
 @MainActor
 struct SpecificationView: View {
+    @Environment(\.appTheme) private var theme
     private var specification: String {
         guard let url = Bundle.main.url(forResource: "APP_RULES", withExtension: "md"),
               let text = try? String(contentsOf: url, encoding: .utf8) else {
@@ -162,8 +166,9 @@ struct SpecificationView: View {
     var body: some View {
         ScrollView {
             Text(specification).textSelection(.enabled)
-                .frame(maxWidth: 760, alignment: .leading).padding().frame(maxWidth: .infinity)
+                .frame(maxWidth: theme.layout.readingWidth, alignment: .leading).padding(theme.layout.pageInset).frame(maxWidth: .infinity)
         }
+        .themeScreen()
         .navigationTitle("App specification")
     }
 }

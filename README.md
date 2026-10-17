@@ -17,6 +17,8 @@ Mac shortcuts remain Shift-Command-R/Y/N for review/Yes/No, Command-Return for c
 
 ## Rules and code
 
+[THEMES.md](docs/THEMES.md) explains developer theme selection and editing. All app-owned design values and reusable styles live in `Sources/DotListPlusUI/DesignSystem/`. Default follows Apple appearance; TRON adds dark surfaces, cyan glow and brief interaction animations.
+
 [APP_RULES.md](docs/APP_RULES.md) is the editable behavior specification. [architecture.md](docs/architecture.md) defines module ownership, relationships and extension contracts. [naming.md](docs/naming.md) records definitions, renames and historical exceptions.
 
 | Location | Ownership |

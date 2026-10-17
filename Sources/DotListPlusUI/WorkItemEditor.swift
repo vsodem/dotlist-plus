@@ -4,6 +4,7 @@ import SwiftUI
 
 @MainActor
 struct WorkItemEditor: View {
+    @Environment(\.appTheme) private var theme
     @EnvironmentObject private var store: DotListPlusStore
     @Environment(\.dismiss) private var dismiss
     let original: WorkItem?
@@ -59,14 +60,14 @@ struct WorkItemEditor: View {
                 if kind == .action {
                     Section {
                         let choices = store.state.workItems.filter { $0.kind == .action && $0.id != original?.id && $0.projectID == projectID }
-                        if choices.isEmpty { Text("No other actions in this project yet.").foregroundStyle(.secondary) }
+                        if choices.isEmpty { Text("No other actions in this project yet.").foregroundStyle(theme.colors.secondaryText) }
                         ForEach(choices) { workItem in
                             Toggle(isOn: Binding(get: { prerequisites.contains(workItem.id) }, set: { selected in
                                 if selected { prerequisites.insert(workItem.id) } else { prerequisites.remove(workItem.id) }
                             })) {
                                 VStack(alignment: .leading) {
                                     Text(WorkItemRules.label(workItem, in: store.state))
-                                    if workItem.completedAt != nil { Text("Complete").font(.caption).foregroundStyle(.secondary) }
+                                    if workItem.completedAt != nil { Text("Complete").font(theme.typography.caption).foregroundStyle(theme.colors.secondaryText) }
                                 }
                             }
                         }
@@ -78,22 +79,22 @@ struct WorkItemEditor: View {
                 if let original, original.kind == .outcome {
                     Section("Required actions") {
                         ForEach(store.state.workItems.filter { $0.outcomeID == original.id }) { workItem in
-                            Label(workItem.title, systemImage: workItem.completedAt == nil ? "circle" : "checkmark.circle")
+                            Label(workItem.title, systemImage: workItem.completedAt == nil ? theme.icons.action : theme.icons.complete)
                         }
-                        Button("Add required action", systemImage: "plus") { addingChild = true }
+                        Button("Add required action", systemImage: theme.icons.add) { addingChild = true }
                         Text("Adding a required action changes outcome progress. It does not add prerequisite links to other actions.")
-                            .font(.footnote).foregroundStyle(.secondary)
+                            .font(theme.typography.footnote).foregroundStyle(theme.colors.secondaryText)
                     }
                 }
                 if !idle {
                     Text("Titles and new ordinary actions can be saved during a cycle. Use Choose again in Focus to edit existing relationships.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(theme.typography.footnote).foregroundStyle(theme.colors.secondaryText)
                 }
-                if let error = store.error { Text(error).foregroundStyle(.red) }
+                if let error = store.error { Text(error).foregroundStyle(theme.colors.danger) }
                 if let original {
                     Section {
                         if original.kind == .action && original.completedAt == nil && original.outcomeID == nil {
-                            Button("Convert to outcome", systemImage: "list.bullet.indent") { breakingDown = true }.disabled(!idle)
+                            Button("Convert to outcome", systemImage: theme.icons.convert) { breakingDown = true }.disabled(!idle)
                         }
                         if original.completedAt != nil {
                             Button("Reopen action") { Task { if await store.apply(.reopenAction(original.id), expectedState: editingState) { dismiss() } } }.disabled(!idle)
@@ -104,6 +105,7 @@ struct WorkItemEditor: View {
             }
             .formStyle(.grouped)
             .onAppear { if editingState == nil { editingState = store.state } }
+            .themeScreen()
             .navigationTitle(original == nil ? "Add work" : "Edit work")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -129,7 +131,7 @@ struct WorkItemEditor: View {
             }
         }
         #if os(macOS)
-        .frame(minWidth: 520, minHeight: 580)
+        .frame(minWidth: theme.layout.workEditor.width, minHeight: theme.layout.workEditor.height)
         #endif
     }
 
@@ -150,6 +152,7 @@ struct WorkItemEditor: View {
 
 @MainActor
 struct OutcomeConversionView: View {
+    @Environment(\.appTheme) private var theme
     @EnvironmentObject private var store: DotListPlusStore
     @Environment(\.dismiss) private var dismiss
     let workItemID: ID
@@ -164,7 +167,7 @@ struct OutcomeConversionView: View {
         NavigationStack {
             Form {
                 Section("One required action per line, in list order") {
-                    TextEditor(text: $text).frame(minHeight: 140).accessibilityLabel("Required actions, one per line")
+                    TextEditor(text: $text).frame(minHeight: theme.layout.editorTextHeight).accessibilityLabel("Required actions, one per line")
                 }
                 Section("Review the relationship changes") {
                     if let workItem = store.state.workItem(workItemID) {
@@ -176,9 +179,10 @@ struct OutcomeConversionView: View {
                         Text("The required actions replace the action in list order. They will not require one another unless you add those links separately.")
                     }
                 }
-                if let error = store.error { Text(error).foregroundStyle(.red) }
+                if let error = store.error { Text(error).foregroundStyle(theme.colors.danger) }
             }
             .onAppear { if editingState == nil { editingState = store.state } }
+            .themeScreen()
             .navigationTitle("Convert to outcome")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -191,7 +195,7 @@ struct OutcomeConversionView: View {
             }
         }
         #if os(macOS)
-        .frame(minWidth: 500, minHeight: 520)
+        .frame(minWidth: theme.layout.conversionEditor.width, minHeight: theme.layout.conversionEditor.height)
         #endif
     }
 }

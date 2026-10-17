@@ -109,7 +109,15 @@ Start fresh under these identifiers. Never discover, migrate, import or modify o
 
 Portable backups contain one list without account/provider metadata. Before import, erasure or conflict resolution, preserve the complete previous localStore as `dot-list-plus-recovery-<ID>.json`. Recovery copies retain localStore format and are rejected by portable import. Restore separately with the app closed: retain the current file, validate the recovery file, and replace the local-store file with that complete copy. UI file pickers access user-selected portable files only. Future format changes require explicit version handling and tested migrations.
 
-## 10. Acceptance checks
+## 10. Appearance
+
+Themes change presentation only. Developer-editable visual values and shared styles live in `Sources/DotListPlusUI/DesignSystem`; [THEMES.md](THEMES.md) documents selection and extension. Default ships with native Apple controls, semantic colors, system typography and light/dark appearance. TRON uses dark surfaces, cyan illuminated edges/dots, amber next-action accents and brief interaction animations inspired by TRON: Legacy.
+
+The developer default applies unless the `DOTLIST_THEME` launch environment selects a known theme. Unknown values keep the developer default. No theme preference is stored or synced, and there is no user theme editor. Navigation, editors and secondary screens inherit the same theme. Native system dialogs retain platform styling.
+
+Text remains readable without glow. Reduce Motion disables decorative transitions and press scaling; Increased Contrast removes glow. State labels and symbols remain present, and custom action buttons retain at least a 44-point target. Themes never change work rules, shortcuts, persistence or sync.
+
+## 11. Acceptance checks
 
 | Scenario | Required result / enforcing suite |
 |---|---|
@@ -128,5 +136,9 @@ Portable backups contain one list without account/provider metadata. Before impo
 | Invalid import, recovery copy as portable input | Reject before replacement. FormatContractTests/AcceptanceTests. |
 | New local data and recovery copies | Restart preserves review, account partitions, pending work and conflict inputs. StorageTests. |
 | Forbidden module import/target connection; stale generator output/name | CI check fails, including newly added files. Checker negative tests. |
+| Known, absent or unknown theme override | Select the requested known theme or preserve the developer default; ThemeTests. |
+| Reduce Motion with either theme | No custom transition or press scaling; ThemeTests and rendered interaction check. |
+| Default light/dark; TRON; navigation and nested sheets | Consistent inherited theme, readable text, native controls and unchanged commands; Apple builds and manual checks in THEMES.md. |
+| Large text, long titles, disabled/destructive controls and Increased Contrast | Usable layout and labels, no glow under Increased Contrast; manual checks in THEMES.md. |
 
 Unsigned builds and tests do not establish live iCloud operation. Apple identifier registration, signing/provisioning, CloudKit development/production schema deployment and signed two-device tests are release requirements.

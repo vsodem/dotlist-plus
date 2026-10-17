@@ -4,6 +4,7 @@ import SwiftUI
 
 @MainActor
 struct AllWorkView: View {
+    @Environment(\.appTheme) private var theme
     @EnvironmentObject private var store: DotListPlusStore
     @State private var projectID: ID?
     @State private var showCompleted = false
@@ -29,14 +30,14 @@ struct AllWorkView: View {
                     ForEach(state.projects) { Text($0.title).tag(Optional($0.id)) }
                 }
                 if let id = projectID {
-                    Text(progressText(WorkItemRules.projectProgress(id, in: state))).foregroundStyle(.secondary)
+                    Text(progressText(WorkItemRules.projectProgress(id, in: state))).foregroundStyle(theme.colors.secondaryText)
                 }
                 Toggle("Show completed actions", isOn: $showCompleted)
             }
             if state.selection.phase != .idle {
                 Section {
                     Text("Titles and new actions can be edited now. Use Choose again in Focus before changing relationships or deleting work.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(theme.typography.footnote).foregroundStyle(theme.colors.secondaryText)
                 }
             }
             if !outcomes.isEmpty {
@@ -44,48 +45,49 @@ struct AllWorkView: View {
                     ForEach(outcomes) { outcome in
                         Button { editing = outcome } label: {
                             HStack(alignment: .top) {
-                                Image(systemName: "square.stack").foregroundStyle(Color.accentColor)
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(WorkItemRules.label(outcome, in: state)).foregroundStyle(.primary)
-                                    Text(progressText(WorkItemRules.outcomeProgress(outcome.id, in: state))).font(.caption).foregroundStyle(.secondary)
+                                Image(systemName: theme.icons.outcome).foregroundStyle(theme.colors.accent)
+                                VStack(alignment: .leading, spacing: theme.layout.labelGap) {
+                                    Text(WorkItemRules.label(outcome, in: state)).foregroundStyle(theme.colors.text)
+                                    Text(progressText(WorkItemRules.outcomeProgress(outcome.id, in: state))).font(theme.typography.caption).foregroundStyle(theme.colors.secondaryText)
                                 }
                                 Spacer()
-                                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
-                            }.padding(.vertical, 5)
+                                Image(systemName: theme.icons.disclosure).font(theme.typography.caption).foregroundStyle(theme.colors.secondaryText)
+                            }.padding(.vertical, theme.layout.detailGap)
                         }.buttonStyle(.plain)
                     }
                 }
             }
             Section("Actions · list order") {
                 if actions.isEmpty {
-                    ContentUnavailableView("No actions here", systemImage: "list.bullet", description: Text("Add an action, or show completed work."))
+                    ContentUnavailableView("No actions here", systemImage: theme.icons.work, description: Text("Add an action, or show completed work."))
                 }
                 ForEach(actions) { workItem in
-                    HStack(alignment: .top, spacing: 12) {
+                    HStack(alignment: .top, spacing: theme.layout.rowGap) {
                         Button { editing = workItem } label: { workItemLabel(workItem) }
                             .buttonStyle(.plain)
                         if workItem.completedAt == nil {
                             Menu {
-                                Button("Edit action", systemImage: "pencil") { editing = workItem }
+                                Button("Edit action", systemImage: theme.icons.edit) { editing = workItem }
                                 if WorkItemRules.available(workItem, in: state) {
-                                    Button("Make urgent", systemImage: "bolt") { Task { await store.apply(.makeUrgent(workItem.id)) } }
+                                    Button("Make urgent", systemImage: theme.icons.urgent) { Task { await store.apply(.makeUrgent(workItem.id)) } }
                                 } else {
-                                    Button("Find prerequisite to make urgent", systemImage: "bolt") { blockedUrgent = workItem }
+                                    Button("Find prerequisite to make urgent", systemImage: theme.icons.urgent) { blockedUrgent = workItem }
                                 }
                             } label: {
-                                Image(systemName: "ellipsis.circle").frame(width: 44, height: 44)
+                                Image(systemName: theme.icons.more).frame(width: theme.layout.hitTarget, height: theme.layout.hitTarget)
                             }
                             .accessibilityLabel("Options for \(workItem.title)")
                         }
-                    }.padding(.vertical, 3)
+                    }.padding(.vertical, theme.layout.rowInset)
                 }
             }
         }
+        .themeScreen()
         .navigationTitle("All work")
         .toolbar {
             ToolbarItemGroup {
-                Button { managingProjects = true } label: { Label("Projects", systemImage: "folder") }
-                Button { adding = true } label: { Label("Add action", systemImage: "plus") }
+                Button { managingProjects = true } label: { Label("Projects", systemImage: theme.icons.project) }
+                Button { adding = true } label: { Label("Add action", systemImage: theme.icons.add) }
             }
         }
         .disabled(!store.ready || store.saving || !store.conflicts.isEmpty)
@@ -99,27 +101,28 @@ struct AllWorkView: View {
     }
 
     private func workItemLabel(_ workItem: WorkItem) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: workItem.completedAt != nil ? "checkmark.circle" : state.selection.dottedActionIDs.contains(workItem.id) ? "circle.fill" : "circle")
-                .foregroundStyle(state.selection.dottedActionIDs.contains(workItem.id) ? Color.accentColor : Color.secondary)
-                .frame(width: 20).padding(.top, 4)
-            VStack(alignment: .leading, spacing: 5) {
+        HStack(alignment: .top, spacing: theme.layout.rowGap) {
+            Image(systemName: workItem.completedAt != nil ? theme.icons.complete : state.selection.dottedActionIDs.contains(workItem.id) ? theme.icons.dot : theme.icons.action)
+                .foregroundStyle(state.selection.dottedActionIDs.contains(workItem.id) ? theme.colors.accent : theme.colors.secondaryText)
+                .themeGlow(active: state.selection.dottedActionIDs.contains(workItem.id))
+                .frame(width: theme.layout.iconWidth).padding(.top, theme.layout.labelGap)
+            VStack(alignment: .leading, spacing: theme.layout.detailGap) {
                 Text(WorkItemRules.label(workItem, in: state))
                     .strikethrough(workItem.completedAt != nil)
-                    .foregroundStyle(workItem.completedAt == nil ? .primary : .secondary)
+                    .foregroundStyle(workItem.completedAt == nil ? theme.colors.text : theme.colors.secondaryText)
                 if workItem.completedAt != nil {
-                    Text("Complete").font(.caption).foregroundStyle(.secondary)
+                    Text("Complete").font(theme.typography.caption).foregroundStyle(theme.colors.secondaryText)
                 } else if !WorkItemRules.available(workItem, in: state) {
-                    Label("Requires: " + WorkItemRules.blockers(workItem, in: state).map(\.title).joined(separator: ", "), systemImage: "lock")
-                        .font(.caption).foregroundStyle(.secondary)
+                    Label("Requires: " + WorkItemRules.blockers(workItem, in: state).map(\.title).joined(separator: ", "), systemImage: theme.icons.blocked)
+                        .font(theme.typography.caption).foregroundStyle(theme.colors.secondaryText)
                 } else {
                     Text(state.selection.dottedActionIDs.contains(workItem.id) ? "Dotted" : "Available for review")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(theme.typography.caption).foregroundStyle(theme.colors.secondaryText)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(minHeight: 44)
+        .frame(minHeight: theme.layout.hitTarget)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
@@ -127,6 +130,7 @@ struct AllWorkView: View {
 
 @MainActor
 struct UrgentPrerequisiteView: View {
+    @Environment(\.appTheme) private var theme
     @EnvironmentObject private var store: DotListPlusStore
     @Environment(\.dismiss) private var dismiss
     let workItemID: ID
@@ -140,24 +144,26 @@ struct UrgentPrerequisiteView: View {
                     ForEach(WorkItemRules.availablePrerequisites(of: workItemID, in: store.state)) { workItem in
                         Button {
                             Task { if await store.apply(.makeUrgent(workItem.id)) { dismiss() } }
-                        } label: { Label(WorkItemRules.label(workItem, in: store.state), systemImage: "bolt") }
+                        } label: { Label(WorkItemRules.label(workItem, in: store.state), systemImage: theme.icons.urgent) }
                     }
                 }
                 Text("Completing a prerequisite unlocks dependent work for a later review. It does not make that work urgent.")
-                    .font(.footnote).foregroundStyle(.secondary)
-                if let error = store.error { Text(error).foregroundStyle(.red) }
+                    .font(theme.typography.footnote).foregroundStyle(theme.colors.secondaryText)
+                if let error = store.error { Text(error).foregroundStyle(theme.colors.danger) }
             }
+            .themeScreen()
             .navigationTitle("Unblock urgent work")
             .toolbar { Button("Close") { dismiss() } }
         }
         #if os(macOS)
-        .frame(minWidth: 480, minHeight: 400)
+        .frame(minWidth: theme.layout.urgentEditor.width, minHeight: theme.layout.urgentEditor.height)
         #endif
     }
 }
 
 @MainActor
 struct ProjectsView: View {
+    @Environment(\.appTheme) private var theme
     @EnvironmentObject private var store: DotListPlusStore
     @Environment(\.dismiss) private var dismiss
     @State private var editing: Project?
@@ -165,24 +171,25 @@ struct ProjectsView: View {
     var body: some View {
         NavigationStack {
             List {
-                if store.state.projects.isEmpty { Text("Projects collect related work. Add one to get started.").foregroundStyle(.secondary) }
+                if store.state.projects.isEmpty { Text("Projects collect related work. Add one to get started.").foregroundStyle(theme.colors.secondaryText) }
                 ForEach(store.state.projects) { project in
                     Button { editing = project } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(project.title).foregroundStyle(.primary)
-                            Text(progressText(WorkItemRules.projectProgress(project.id, in: store.state))).font(.caption).foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: theme.layout.labelGap) {
+                            Text(project.title).foregroundStyle(theme.colors.text)
+                            Text(progressText(WorkItemRules.projectProgress(project.id, in: store.state))).font(theme.typography.caption).foregroundStyle(theme.colors.secondaryText)
                         }
                     }
                 }
                 if store.state.selection.phase != .idle {
-                    Text("Use Choose again before creating or deleting projects.").font(.footnote).foregroundStyle(.secondary)
+                    Text("Use Choose again before creating or deleting projects.").font(theme.typography.footnote).foregroundStyle(theme.colors.secondaryText)
                 }
             }
+            .themeScreen()
             .navigationTitle("Projects")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
                 ToolbarItem(placement: .primaryAction) {
-                    Button { adding = true } label: { Label("Add project", systemImage: "plus") }
+                    Button { adding = true } label: { Label("Add project", systemImage: theme.icons.add) }
                         .disabled(store.state.selection.phase != .idle)
                 }
             }
@@ -190,13 +197,14 @@ struct ProjectsView: View {
             .sheet(item: $editing) { ProjectEditor(project: $0) }
         }
         #if os(macOS)
-        .frame(minWidth: 440, minHeight: 420)
+        .frame(minWidth: theme.layout.projects.width, minHeight: theme.layout.projects.height)
         #endif
     }
 }
 
 @MainActor
 struct ProjectEditor: View {
+    @Environment(\.appTheme) private var theme
     @EnvironmentObject private var store: DotListPlusStore
     @Environment(\.dismiss) private var dismiss
     let project: Project?
@@ -211,14 +219,15 @@ struct ProjectEditor: View {
         NavigationStack {
             Form {
                 TextField("Project name", text: $title)
-                if let error = store.error { Text(error).foregroundStyle(.red) }
+                if let error = store.error { Text(error).foregroundStyle(theme.colors.danger) }
                 if let project {
                     Button("Delete project", role: .destructive) { deleting = true }
                         .disabled(store.state.selection.phase != .idle || store.state.workItems.contains { $0.projectID == project.id })
-                    Text("A project can be deleted once all its work has been moved or removed.").font(.footnote).foregroundStyle(.secondary)
+                    Text("A project can be deleted once all its work has been moved or removed.").font(theme.typography.footnote).foregroundStyle(theme.colors.secondaryText)
                 }
             }
             .onAppear { if editingState == nil { editingState = store.state } }
+            .themeScreen()
             .navigationTitle(project == nil ? "New project" : "Edit project")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -234,7 +243,7 @@ struct ProjectEditor: View {
             }
         }
         #if os(macOS)
-        .frame(minWidth: 420, minHeight: 260)
+        .frame(minWidth: theme.layout.projectEditor.width, minHeight: theme.layout.projectEditor.height)
         #endif
     }
 }

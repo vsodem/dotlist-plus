@@ -33,16 +33,15 @@ struct DotListPlusApp: App {
             RootView()
                 .id(store.scope)
                 .environmentObject(store)
-                .tint(Color.accentColor)
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active { Task { await store.syncNow() } }
                 }
                 #if os(macOS)
-                .frame(minWidth: 760, minHeight: 560)
+                .frame(minWidth: AppWindowLayout.minimum.width, minHeight: AppWindowLayout.minimum.height)
                 #endif
         }
         #if os(macOS)
-        .defaultSize(width: 1000, height: 740)
+        .defaultSize(width: AppWindowLayout.initial.width, height: AppWindowLayout.initial.height)
         .commands {
             CommandMenu("Dot List Plus") {
                 Button("Start review") { Task { await store.apply(.beginReview) } }

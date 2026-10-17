@@ -2,7 +2,7 @@
 
 # Keep original Final Version easy to edit
 
-**The current app combines original Final Version's execution loop with a later question wording.** Changing that wording is a smaller correction than replacing the algorithm. This report separates Mark Forster's published method, later variants, and the behavior verified in this checkout. The practical goal is a short set of rules with named places to edit them, without adding a configurable framework. No application code was changed.
+**The current app combines original Final Version's execution loop with a later question wording.** Changing that wording is a smaller correction than replacing the algorithm. This report separates Mark Forster's published method and later variants. No application code was changed.
 
 ## Original FV selects before it executes
 

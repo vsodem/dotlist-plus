@@ -11,13 +11,23 @@ jobs:
     container: swift:6.0
     steps:
       - uses: actions/checkout@v4
-      - run: swift test
+      - run: python3 scripts/check-contracts.py
+      - run: python3 scripts/test_contract_checks.py
+      - run: python3 scripts/test_codex_sync_hook.py
+      - name: Test as an ordinary user so file-permission failures are exercised
+        run: |
+          useradd --create-home swift-tests
+          chown -R swift-tests "$GITHUB_WORKSPACE"
+          su -s /bin/bash swift-tests -c 'swift test'
   apple:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
+      - run: python3 scripts/check-contracts.py
+      - run: python3 scripts/test_contract_checks.py
+      - run: python3 scripts/test_codex_sync_hook.py
       - run: swift test
       - name: Build iPhone simulator app
-        run: xcodebuild -project Apple/DotList.xcodeproj -scheme DotList -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/DotList-iOS CODE_SIGNING_ALLOWED=NO build
+        run: xcodebuild -project Apple/DotListPlus.xcodeproj -scheme DotListPlus -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/DotListPlus-iOS CODE_SIGNING_ALLOWED=NO build
       - name: Build native Mac app
-        run: xcodebuild -project Apple/DotList.xcodeproj -scheme DotList -destination 'platform=macOS' -derivedDataPath /tmp/DotList-Mac CODE_SIGNING_ALLOWED=NO build
+        run: xcodebuild -project Apple/DotListPlus.xcodeproj -scheme DotListPlus -destination 'platform=macOS' -derivedDataPath /tmp/DotListPlus-Mac CODE_SIGNING_ALLOWED=NO build

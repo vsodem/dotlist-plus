@@ -1,0 +1,359 @@
+// !$*UTF8*$!
+{
+	"archiveVersion" = 1;
+	"classes" = {
+	};
+	"objectVersion" = 56;
+	"objects" = {
+		"A17079D8447174347107F513" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "DotListPlusApp.swift";
+			"sourceTree" = "<group>";
+		};
+		"49104B4BD49A269C20F7B47E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "A17079D8447174347107F513";
+		};
+		"45073D678F4BAB1B8F396A3E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PushNotifications.swift";
+			"sourceTree" = "<group>";
+		};
+		"EF27F0C9FF069895233DA3FF" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "45073D678F4BAB1B8F396A3E";
+		};
+		"0D04BFEB7D64B71C74FC925C" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"A17079D8447174347107F513",
+				"45073D678F4BAB1B8F396A3E",
+			);
+			"name" = "App";
+			"path" = "DotListPlus";
+			"sourceTree" = "<group>";
+		};
+		"BD12731D7BC9B843D8523E65" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "folder.assetcatalog";
+			"path" = "DotListPlus/Assets.xcassets";
+			"sourceTree" = "<group>";
+		};
+		"B8BDE8EA34F35DD3302FBF05" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "BD12731D7BC9B843D8523E65";
+		};
+		"4228AEB07C410FFC9D15B458" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "net.daringfireball.markdown";
+			"path" = "../docs/APP_RULES.md";
+			"sourceTree" = "<group>";
+		};
+		"643DB26AE3F8C896DE849F5D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "4228AEB07C410FFC9D15B458";
+		};
+		"A8792157CB4F27FB949C035F" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.application";
+			"includeInIndex" = 0;
+			"path" = "DotListPlus.app";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"0A3E27B8CA818264D75C8D81" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"A8792157CB4F27FB949C035F",
+			);
+			"name" = "Products";
+			"sourceTree" = "<group>";
+		};
+		"19F479106CE8C3BA8C106518" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"0D04BFEB7D64B71C74FC925C",
+				"BD12731D7BC9B843D8523E65",
+				"4228AEB07C410FFC9D15B458",
+				"0A3E27B8CA818264D75C8D81",
+			);
+			"sourceTree" = "<group>";
+		};
+		"878A52FC5FF6A57D50B7B870" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"49104B4BD49A269C20F7B47E",
+				"EF27F0C9FF069895233DA3FF",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"BC4A71180870F7945155FBB0" = {
+			"isa" = "XCLocalSwiftPackageReference";
+			"relativePath" = "..";
+		};
+		"1A93F6E074E1D4ACF433AB01" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "DotListPlusCore";
+		};
+		"CE2129754667AB4746DD98CF" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "DotListPlusApplication";
+		};
+		"7C673A23A66402B763FC50E7" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "DotListPlusStorage";
+		};
+		"588C345CEAF935D31E0D1F30" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "DotListPlusCloudKit";
+		};
+		"5F47255A0D7743F1BE2F226B" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "DotListPlusUI";
+		};
+		"871785226E95A401D719A687" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "1A93F6E074E1D4ACF433AB01";
+		};
+		"96C2BF58884311887A0808AD" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "CE2129754667AB4746DD98CF";
+		};
+		"5FDAD39245A56CB1EA5C2848" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "7C673A23A66402B763FC50E7";
+		};
+		"7D2F82D8C5A1F34F3741AD07" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "588C345CEAF935D31E0D1F30";
+		};
+		"D521E9FE221CC0B6437ED98C" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "5F47255A0D7743F1BE2F226B";
+		};
+		"E2AA269EB967A8853A258BFA" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"871785226E95A401D719A687",
+				"96C2BF58884311887A0808AD",
+				"5FDAD39245A56CB1EA5C2848",
+				"7D2F82D8C5A1F34F3741AD07",
+				"D521E9FE221CC0B6437ED98C",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"41D311A605520FC7B8B9A980" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"B8BDE8EA34F35DD3302FBF05",
+				"643DB26AE3F8C896DE849F5D",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"488864B3D19480A82F7F1786" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"CLANG_ENABLE_MODULES" = "YES";
+				"CLANG_ENABLE_OBJC_ARC" = "YES";
+				"SWIFT_VERSION" = "5.0";
+				"SWIFT_STRICT_CONCURRENCY" = "complete";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"ONLY_ACTIVE_ARCH" = "YES";
+				"ENABLE_TESTABILITY" = "YES";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG $(inherited)";
+			};
+			"name" = "Debug";
+		};
+		"952548237D7F645F11D1E7B6" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME" = "AccentColor";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"DEVELOPMENT_TEAM" = "NYZA33Z8N5";
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphone*]" = "DotListPlus/DotListPlus-iOS.entitlements";
+				"APS_ENVIRONMENT" = "development";
+				"ICLOUD_CONTAINER_ENVIRONMENT" = "Development";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "DotListPlus/DotListPlus.entitlements";
+				"COMBINE_HIDPI_IMAGES" = "YES";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"ENABLE_APP_SANDBOX" = "YES";
+				"ENABLE_HARDENED_RUNTIME" = "YES";
+				"ENABLE_USER_SELECTED_FILES" = "readwrite";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_FILE[sdk=iphone*]" = "DotListPlus/Info-iOS.plist";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "Dot List Plus";
+				"INFOPLIST_KEY_LSApplicationCategoryType" = "public.app-category.productivity";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents" = "YES";
+				"INFOPLIST_KEY_UILaunchScreen_Generation" = "YES";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"MACOSX_DEPLOYMENT_TARGET" = "14.0";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../Frameworks",
+				);
+				"MARKETING_VERSION" = "0.1.0";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.vsodem.DotListPlus";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"SDKROOT" = "auto";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator macosx";
+				"SUPPORTS_MACCATALYST" = "NO";
+				"SWIFT_EMIT_LOC_STRINGS" = "YES";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+			};
+			"name" = "Debug";
+		};
+		"35B1014F135DE9B45529B733" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"CLANG_ENABLE_MODULES" = "YES";
+				"CLANG_ENABLE_OBJC_ARC" = "YES";
+				"SWIFT_VERSION" = "5.0";
+				"SWIFT_STRICT_CONCURRENCY" = "complete";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+				"ONLY_ACTIVE_ARCH" = "NO";
+				"ENABLE_TESTABILITY" = "NO";
+			};
+			"name" = "Release";
+		};
+		"E2D3A31BEAA1368FC62DA77A" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME" = "AccentColor";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"DEVELOPMENT_TEAM" = "NYZA33Z8N5";
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphone*]" = "DotListPlus/DotListPlus-iOS.entitlements";
+				"APS_ENVIRONMENT" = "production";
+				"ICLOUD_CONTAINER_ENVIRONMENT" = "Production";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "DotListPlus/DotListPlus.entitlements";
+				"COMBINE_HIDPI_IMAGES" = "YES";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"ENABLE_APP_SANDBOX" = "YES";
+				"ENABLE_HARDENED_RUNTIME" = "YES";
+				"ENABLE_USER_SELECTED_FILES" = "readwrite";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_FILE[sdk=iphone*]" = "DotListPlus/Info-iOS.plist";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "Dot List Plus";
+				"INFOPLIST_KEY_LSApplicationCategoryType" = "public.app-category.productivity";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents" = "YES";
+				"INFOPLIST_KEY_UILaunchScreen_Generation" = "YES";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"MACOSX_DEPLOYMENT_TARGET" = "14.0";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../Frameworks",
+				);
+				"MARKETING_VERSION" = "0.1.0";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.vsodem.DotListPlus";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"SDKROOT" = "auto";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator macosx";
+				"SUPPORTS_MACCATALYST" = "NO";
+				"SWIFT_EMIT_LOC_STRINGS" = "YES";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+			};
+			"name" = "Release";
+		};
+		"CD7C985718C27B30B80E0BF9" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"488864B3D19480A82F7F1786",
+				"35B1014F135DE9B45529B733",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"4BF34093AEFA68795DFBCC0D" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"952548237D7F645F11D1E7B6",
+				"E2D3A31BEAA1368FC62DA77A",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"34A04005BCAF206EEC990BD9" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "4BF34093AEFA68795DFBCC0D";
+			"buildPhases" = (
+				"878A52FC5FF6A57D50B7B870",
+				"E2AA269EB967A8853A258BFA",
+				"41D311A605520FC7B8B9A980",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+			"packageProductDependencies" = (
+				"1A93F6E074E1D4ACF433AB01",
+				"CE2129754667AB4746DD98CF",
+				"7C673A23A66402B763FC50E7",
+				"588C345CEAF935D31E0D1F30",
+				"5F47255A0D7743F1BE2F226B",
+			);
+			"name" = "DotListPlus";
+			"productName" = "DotListPlus";
+			"productReference" = "A8792157CB4F27FB949C035F";
+			"productType" = "com.apple.product-type.application";
+		};
+		"244210E48437B6556980A702" = {
+			"isa" = "PBXProject";
+			"attributes" = {
+				"BuildIndependentTargetsInParallel" = "YES";
+				"LastSwiftUpdateCheck" = "1600";
+				"LastUpgradeCheck" = "1600";
+				"TargetAttributes" = {
+					"34A04005BCAF206EEC990BD9" = {
+						"CreatedOnToolsVersion" = "16.0";
+						"DevelopmentTeam" = "NYZA33Z8N5";
+						"SystemCapabilities" = {
+							"com.apple.iCloud" = {
+								"enabled" = 1;
+							};
+							"com.apple.Push" = {
+								"enabled" = 1;
+							};
+							"com.apple.BackgroundModes" = {
+								"enabled" = 1;
+							};
+						};
+					};
+				};
+			};
+			"buildConfigurationList" = "CD7C985718C27B30B80E0BF9";
+			"compatibilityVersion" = "Xcode 14.0";
+			"developmentRegion" = "en";
+			"hasScannedForEncodings" = 0;
+			"knownRegions" = (
+				"en",
+				"Base",
+			);
+			"mainGroup" = "19F479106CE8C3BA8C106518";
+			"productRefGroup" = "0A3E27B8CA818264D75C8D81";
+			"projectDirPath" = "";
+			"projectRoot" = "";
+			"packageReferences" = (
+				"BC4A71180870F7945155FBB0",
+			);
+			"targets" = (
+				"34A04005BCAF206EEC990BD9",
+			);
+		};
+	};
+	"rootObject" = "244210E48437B6556980A702";
+}

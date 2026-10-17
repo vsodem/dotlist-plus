@@ -1,3 +1,5 @@
+> Historical reference. Source terminology is retained; this is not the current app specification. See [current product rules](../../../docs/APP_RULES.md). [Retired code at its final pre-rename commit](https://github.com/vsodem/dotlist-plus/blob/4d96ce399c4a138288ffb6acb4459eacc34cb266/index.html).
+
 # iCloud sync implementation plan
 
 Goal: synchronize one personal list per iCloud account while preserving offline work, recovery copies, and version-2 backups.

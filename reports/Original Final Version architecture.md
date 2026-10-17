@@ -1,3 +1,5 @@
+> Historical reference. Source terminology is retained; this is not the current app specification. See [current product rules](../docs/APP_RULES.md). [Retired code at its final pre-rename commit](https://github.com/vsodem/dotlist-plus/blob/4d96ce399c4a138288ffb6acb4459eacc34cb266/index.html).
+
 # Keep original Final Version easy to edit
 
 **The current app combines original Final Version's execution loop with a later question wording.** Changing that wording is a smaller correction than replacing the algorithm. This report separates Mark Forster's published method, later variants, and the behavior verified in this checkout. The practical goal is a short set of rules with named places to edit them, without adding a configurable framework. No application code was changed.

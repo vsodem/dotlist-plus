@@ -1,0 +1,12 @@
+{
+  "displayName": "Dot List Plus",
+  "codeName": "DotListPlus",
+  "fileName": "dot-list-plus",
+  "bundleID": "com.vsodem.DotListPlus",
+  "cloudContainerID": "iCloud.com.vsodem.DotListPlus",
+  "providerID": "cloudkit.iCloud.com.vsodem.DotListPlus.private.v1",
+  "cloudZone": "DotListPlus",
+  "localDirectory": "DotListPlus",
+  "localFile": "local-store-v1.json",
+  "backupFile": "dot-list-plus-backup.json"
+}

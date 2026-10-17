@@ -13,7 +13,7 @@ public final class DotListPlusStore: ObservableObject {
     @Published private(set) var syncStatus = "Opening saved list…"
     @Published private(set) var conflicts: [MergeConflict] = []
     @Published var error: String?
-    @Published var notice: String?
+    @Published private(set) var notice: String?
     let syncServiceName: String
     private let coordinator: SyncCoordinator
     private var generation = -1
@@ -74,6 +74,22 @@ public final class DotListPlusStore: ObservableObject {
         } catch {
             self.error = "Change not saved. \(error.localizedDescription)"
             return false
+        }
+    }
+
+    @discardableResult
+    func dismissNotice() -> Task<Void, Never>? {
+        guard ready, !saving else { return nil }
+        // Capture the displayed notice's identity during the click, before scheduling work.
+        let expectedScope = scope
+        let expectedGeneration = generation
+        saving = true
+        return Task {
+            defer { saving = false }
+            do {
+                receive(try await coordinator.dismissNotice(expectedScope: expectedScope, expectedGeneration: expectedGeneration))
+                error = nil
+            } catch { self.error = "Notice not dismissed. \(error.localizedDescription)" }
         }
     }
 

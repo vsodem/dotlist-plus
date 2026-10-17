@@ -36,7 +36,8 @@ public struct RootView: View {
                 HStack(alignment: .top) {
                     Text(notice).font(theme.typography.callout)
                     Spacer(minLength: 0)
-                    Button("Dismiss") { store.notice = nil }
+                    Button("Dismiss") { store.dismissNotice() }
+                        .disabled(store.saving)
                 }.padding(theme.layout.pageInset).background(theme.colors.notice.opacity(theme.colors.bannerOpacity))
             }
             #if os(macOS)

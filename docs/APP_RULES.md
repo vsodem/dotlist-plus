@@ -84,6 +84,8 @@ The coordinator alone commits changes and chooses the active account partition. 
 
 Normal changes validate, save atomically, update the visible snapshot, then request cloud upload. Save failure preserves the previous visible state. Network failure leaves locally saved work pending. Cloud events request synchronization; they cannot independently publish restored old state.
 
+Dismiss a notice through the coordinator with the account scope and snapshot generation displayed when Dismiss was clicked. Save the cleared notice before hiding its banner. A failed save retains the banner and shows an error. Reject a changed account; an outdated generation does nothing and returns the current snapshot, even if a newer notice has identical text. Any intervening save can require another click. Dismissal survives edits, sync and restart; it preserves pending uploads, conflicts, baselines and checkpoints and does not request cloud synchronization.
+
 The first signed-in account adopts the local list once. Later accounts have separate partitions. Signing out opens a separate local list; signing back in restores that account's pending work. Temporary account lookup failure pauses sync without switching lists. Account and provider scope apply to revisions/checkpoints. Backups can explicitly transfer work between lists.
 
 Independent edits merge automatically. Conflicting fields, deletion/edit and incompatible order require explicit choices. Preserve both versions until resolution. Valid one-sided review progress continues; conflicting or invalidated selection resets with an explanation. Work relationships never receive a silent repair.
@@ -128,6 +130,7 @@ Text remains readable without glow. Reduce Motion disables decorative transition
 | Yes/No review; chain A,C,D; new work during review | Fixed candidates and execution D,C,A. AcceptanceTests. |
 | Urgent available/blocked work; Choose again | Section 6 behavior; no automatic prerequisite choice. AcceptanceTests. |
 | Save failure or cancelled/stale command | No unsaved visible state or wrong-account commit; cancellation after atomic save still exposes durable state. CoordinatorTests. |
+| Dismiss notice; edit/sync/restart; failed save; stale click or changed account | Notice clears only after a successful save; failed saves retain banner and show error; old generations cannot clear newer notices, including identical text. Account changes reject dismissal. Other sync metadata stays intact and dismissal sends no cloud request. NoticeTests/StoreNoticeTests. |
 | Retry, lost acknowledgement, restart, two accounts | At most three revision attempts per sync; durable pending work, account changes during fetch rejected, checkpoints isolated by provider/account. CoordinatorTests and shared provider contract. |
 | Independent edits and invalid merged cycle | Converge or retain both inputs; explicit validated resolution and recovery. MergeTests/CoordinatorTests. |
 | Backup/localStore/cloudSnapshot | Round trips; reject wrong identity/kind/version or missing metadata. FormatContractTests. |

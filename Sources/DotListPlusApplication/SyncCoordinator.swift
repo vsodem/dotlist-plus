@@ -98,6 +98,18 @@ public actor SyncCoordinator {
         return snapshot()
     }
 
+    public func dismissNotice(expectedScope: String, expectedGeneration: Int) async throws -> CoordinatorSnapshot {
+        await lock(); defer { unlock() }
+        try Task.checkCancellation()
+        try checkScope(expectedScope)
+        try requireLoaded()
+        guard expectedGeneration == generation, lists.current.notice != nil else { return snapshot() }
+        var next = lists
+        next.current.notice = nil
+        try await save(next)
+        return snapshot()
+    }
+
     public func replace(with state: ListState, notice: String? = nil, expectedScope: String? = nil, expectedState: ListState? = nil) async throws -> CoordinatorSnapshot {
         await lock(); defer { unlock() }
         try Task.checkCancellation()

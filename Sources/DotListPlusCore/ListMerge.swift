@@ -175,6 +175,13 @@ public enum ListMerge {
         let allowed = Set(ids)
         let common = Set(local).intersection(remote).intersection(allowed)
         let priority = local.filter { common.contains($0) }
+        if priority == remote.filter({ common.contains($0) }) {
+            // Matching shared sequences cannot create an ordering conflict, regardless of the base.
+            var ordered = priority
+            insertMissing(from: local.filter { allowed.contains($0) }, into: &ordered)
+            insertMissing(from: remote.filter { allowed.contains($0) }, into: &ordered)
+            return unique(ordered + ids)
+        }
         let positions = [base, local, remote].map { order in
             Dictionary(uniqueKeysWithValues: order.enumerated().map { ($0.element, $0.offset) })
         }
@@ -230,15 +237,17 @@ public enum ListMerge {
 
     // Preserve the chosen sequence, inserting additions after their nearest preceding action.
     private static func insertMissing(from other: [ID], into result: inout [ID]) {
-        for (index, id) in other.enumerated() where !result.contains(id) {
-            let next = other.dropFirst(index + 1).first(where: { result.contains($0) })
+        var present = Set(result)
+        for (index, id) in other.enumerated() where !present.contains(id) {
+            let next = other.dropFirst(index + 1).first(where: { present.contains($0) })
             if next == nil {
                 result.append(id)
-            } else if let previous = other[..<index].last(where: { result.contains($0) }), let position = result.firstIndex(of: previous) {
+            } else if let previous = other[..<index].last(where: { present.contains($0) }), let position = result.firstIndex(of: previous) {
                 result.insert(id, at: position + 1)
             } else if let next, let position = result.firstIndex(of: next) {
                 result.insert(id, at: position)
             } else { result.append(id) }
+            present.insert(id)
         }
     }
 }

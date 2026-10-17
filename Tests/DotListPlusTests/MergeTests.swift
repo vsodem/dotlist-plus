@@ -165,3 +165,70 @@ final class MergeTests: XCTestCase {
         }
     }
 }
+
+extension MergeTests {
+    func testMatchingSharedOrderKeepsInsertionAnchors() throws {
+        let base = list(["a", "b"])
+        let cases: [([String], [String], [String])] = [
+            (["a", "b"], ["a", "b"], ["a", "b"]),
+            (["l0", "a", "l1", "l2", "b", "l3"], ["r0", "a", "r1", "r2", "b", "r3"],
+             ["l0", "r0", "a", "r1", "r2", "l1", "l2", "b", "l3", "r3"]),
+            (["l1", "l2"], ["r1", "r2"], ["l1", "l2", "r1", "r2"]),
+            ([], ["a", "b"], []),
+            (["b", "a", "l"], ["b", "a", "r"], ["b", "a", "l", "r"])
+        ]
+        for (left, right, expected) in cases {
+            let result = try ListMerge.merge(base: base, local: list(left), remote: list(right))
+            XCTAssertEqual(result.state?.actionOrder, expected)
+            XCTAssertTrue(result.conflicts.isEmpty)
+            XCTAssertNil(result.notice)
+        }
+    }
+
+    func testMatchingOrderKeepsTitleCompletionAndReviewChanges() throws {
+        let base = list(["a", "b", "c"])
+        XCTAssertEqual(try ListMerge.merge(base: base, local: base, remote: base).state, base)
+        var local = base
+        local.workItems[0].title = "Renamed"
+        var remote = base
+        remote.workItems[2].completedAt = 1000
+        remote.actionOrder = ["a", "b"]
+        remote = try ListRules.transition(remote, .beginReview)
+        let merged = try ListMerge.merge(base: base, local: local, remote: remote)
+        var expected = remote
+        expected.workItems[0].title = "Renamed"
+        XCTAssertEqual(merged.state, expected)
+        XCTAssertTrue(merged.conflicts.isEmpty)
+        XCTAssertNil(merged.notice)
+    }
+
+    func testInvalidInputsRejectedAtEveryMergePosition() throws {
+        let valid = list(["a", "b"])
+        var duplicateProject = valid
+        duplicateProject.projects = [Project(id: "p", title: "P"), Project(id: "p", title: "P")]
+        var duplicateItem = valid
+        duplicateItem.workItems.append(duplicateItem.workItems[0])
+        var missingProject = valid
+        missingProject.workItems[0].projectID = "missing"
+        var missingParent = valid
+        missingParent.workItems[0].outcomeID = "missing"
+        var missingPrerequisite = valid
+        missingPrerequisite.workItems[0].prerequisiteIDs = ["missing"]
+        let cases: [(ListState, String)] = [
+            (duplicateProject, "Project IDs must be unique."),
+            (duplicateItem, "Work item IDs must be unique."),
+            (missingProject, "The project for ‘a’ is missing."),
+            (missingParent, "‘a’ needs a valid outcome as its parent."),
+            (missingPrerequisite, "‘a’ has a missing prerequisite or a prerequisite that is not an action.")
+        ]
+        for (invalid, message) in cases {
+            for position in 0..<3 {
+                var inputs = [valid, valid, valid]
+                inputs[position] = invalid
+                XCTAssertThrowsError(try ListMerge.merge(base: inputs[0], local: inputs[1], remote: inputs[2])) {
+                    XCTAssertEqual($0 as? RuleError, RuleError(message))
+                }
+            }
+        }
+    }
+}

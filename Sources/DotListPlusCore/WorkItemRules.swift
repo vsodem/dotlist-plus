@@ -57,8 +57,10 @@ public enum WorkItemRules {
         func require(_ condition: Bool, _ message: String) throws {
             if !condition { throw RuleError(message) }
         }
-        try require(Set(state.projects.map(\.id)).count == state.projects.count, "Project IDs must be unique.")
+        let projectIDs = Set(state.projects.map(\.id))
+        try require(projectIDs.count == state.projects.count, "Project IDs must be unique.")
         try require(Set(state.workItems.map(\.id)).count == state.workItems.count, "Work item IDs must be unique.")
+        let workItems = Dictionary(uniqueKeysWithValues: state.workItems.map { ($0.id, $0) })
         for project in state.projects {
             try require(!project.id.isEmpty && !project.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                         "Every project needs an ID and a title.")
@@ -67,14 +69,14 @@ public enum WorkItemRules {
             try require(!workItem.id.isEmpty && !workItem.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                         "Every work item needs an ID and a title.")
             if let projectID = workItem.projectID {
-                try require(state.projects.contains { $0.id == projectID }, "The project for ‘\(workItem.title)’ is missing.")
+                try require(projectIDs.contains(projectID), "The project for ‘\(workItem.title)’ is missing.")
             }
             if workItem.kind == .outcome {
                 try require(workItem.outcomeID == nil && workItem.prerequisiteIDs.isEmpty && workItem.completedAt == nil,
                             "Outcomes cannot have parents, prerequisites, or a stored completion date.")
             }
             if let parentID = workItem.outcomeID {
-                guard let parent = state.workItem(parentID), parent.kind == .outcome else {
+                guard let parent = workItems[parentID], parent.kind == .outcome else {
                     throw RuleError("‘\(workItem.title)’ needs a valid outcome as its parent.")
                 }
                 try require(parent.projectID == workItem.projectID, "A child must be in the same project as its outcome.")
@@ -84,7 +86,7 @@ public enum WorkItemRules {
                 try require(timestamp.isFinite && timestamp >= 0, "‘\(workItem.title)’ has an invalid completion date.")
             }
             for id in workItem.prerequisiteIDs {
-                guard let prerequisite = state.workItem(id), prerequisite.kind == .action else {
+                guard let prerequisite = workItems[id], prerequisite.kind == .action else {
                     throw RuleError("‘\(workItem.title)’ has a missing prerequisite or a prerequisite that is not an action.")
                 }
                 try require(id != workItem.id, "An action cannot require itself.")
@@ -99,7 +101,7 @@ public enum WorkItemRules {
             if visiting.contains(id) { throw RuleError("These prerequisites would form a circle. No changes were saved.") }
             if visited.contains(id) { return }
             visiting.insert(id)
-            for next in state.workItem(id)?.prerequisiteIDs ?? [] { try visit(next) }
+            for next in workItems[id]?.prerequisiteIDs ?? [] { try visit(next) }
             visiting.remove(id)
             visited.insert(id)
         }

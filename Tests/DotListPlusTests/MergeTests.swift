@@ -157,7 +157,11 @@ final class MergeTests: XCTestCase {
     func testInvalidInputsAreRejected() throws {
         var invalid = list(["a"])
         invalid.workItems.append(invalid.workItems[0])
-        XCTAssertThrowsError(try ListMerge.merge(base: nil, local: invalid, remote: list([])))
-        XCTAssertThrowsError(try ListMerge.merge(base: invalid, local: list([]), remote: list([])))
+        XCTAssertThrowsError(try ListMerge.merge(base: nil, local: invalid, remote: list([]))) {
+            XCTAssertEqual($0 as? RuleError, RuleError("Work item IDs must be unique."))
+        }
+        XCTAssertThrowsError(try ListMerge.merge(base: invalid, local: list([]), remote: list([]))) {
+            XCTAssertEqual($0 as? RuleError, RuleError("Work item IDs must be unique."))
+        }
     }
 }

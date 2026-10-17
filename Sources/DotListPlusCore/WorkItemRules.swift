@@ -185,7 +185,9 @@ public enum WorkItemRules {
             }
             state.workItems.append(contentsOf: children)
             state.actionOrder.replaceSubrange(position...position, with: children.map(\.id))
-        default: throw RuleError("This operation is not a work item change.")
+        case .beginReview, .answerReview, .completeNextAction, .recordPartialWork,
+             .makeUrgent, .clearSelection, .eraseCurrentList:
+            throw RuleError("This operation is not a work item change.")
         }
     }
 }

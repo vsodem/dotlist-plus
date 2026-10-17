@@ -88,9 +88,11 @@ final class CoordinatorTests: XCTestCase {
         let coordinator = SyncCoordinator(storage: storage, remote: remote)
         _ = try await coordinator.load()
         await storage.failing(true)
-        do { _ = try await coordinator.apply([.addWorkItem(WorkItem(id: "a", title: "A"))]); XCTFail() } catch {}
+        do { _ = try await coordinator.apply([.addWorkItem(WorkItem(id: "a", title: "A"))]); XCTFail() } catch { XCTAssertEqual(error as? RuleError, RuleError("Disk full")) }
         let view = await coordinator.snapshot()
         XCTAssertTrue(view.state.workItems.isEmpty)
+        let saved = try await storage.load()
+        XCTAssertEqual(saved.current.state, view.state)
     }
 
     func testLostUploadResponseIsSafeAfterRestart() async throws {
@@ -182,7 +184,7 @@ final class CoordinatorTests: XCTestCase {
         do {
             _ = try await coordinator.apply([.addWorkItem(WorkItem(id: "old", title: "Old account draft"))], expectedScope: first.scope)
             XCTFail("An old account's editor must not save into the new account")
-        } catch {}
+        } catch { XCTAssertEqual(error as? RuleError, RuleError("The account changed while you were editing. Open the list again before saving.")) }
         let current = await coordinator.snapshot()
         XCTAssertTrue(current.state.workItems.isEmpty)
     }
@@ -335,7 +337,7 @@ final class CoordinatorTests: XCTestCase {
         do {
             _ = try await coordinator.apply([.completeNextAction], expectedState: displayed.state)
             XCTFail("Done for A must not complete B")
-        } catch {}
+        } catch { XCTAssertEqual(error as? RuleError, RuleError("The list changed while you were working. Review the current list or reopen the editor before saving again.")) }
         let result = await coordinator.snapshot()
         XCTAssertEqual(result.state.nextAction?.id, "b")
         XCTAssertNil(result.state.workItem("b")?.completedAt)
@@ -354,7 +356,7 @@ final class CoordinatorTests: XCTestCase {
         do {
             _ = try await coordinator.apply([.renameWorkItem("a", "Original")], expectedState: opening.state)
             XCTFail("Stale editor must not restore the old title")
-        } catch {}
+        } catch { XCTAssertEqual(error as? RuleError, RuleError("The list changed while you were working. Review the current list or reopen the editor before saving again.")) }
         let result = await coordinator.snapshot()
         XCTAssertEqual(result.state.workItem("a")?.title, "Remote title")
     }
@@ -407,7 +409,7 @@ extension CoordinatorTests {
 extension CoordinatorTests {
     func testPortableReplacementRequiresLoadedStore() async throws {
         let coordinator = SyncCoordinator(storage: TestStorage(), remote: FakeRemote())
-        do { _ = try await coordinator.replace(with: ListState()); XCTFail("Load must succeed before replacement") } catch {}
+        do { _ = try await coordinator.replace(with: ListState()); XCTFail("Load must succeed before replacement") } catch { XCTAssertEqual(error as? RuleError, RuleError("Open or recover the saved list before making changes.")) }
     }
 }
 
@@ -419,13 +421,13 @@ extension CoordinatorTests {
         do {
             _ = try await coordinator.replace(with: ListState(), expectedScope: displayed.scope, expectedState: displayed.state)
             XCTFail("Stale import must not remove unseen work")
-        } catch {}
+        } catch { XCTAssertEqual(error as? RuleError, RuleError("The list changed while the import confirmation was open. Review it before importing again.")) }
         let after = await coordinator.snapshot()
         XCTAssertEqual(after.state, latest.state)
         do {
             _ = try await coordinator.apply([.eraseCurrentList], expectedScope: displayed.scope, expectedState: displayed.state)
             XCTFail("Stale erase must not remove unseen work")
-        } catch {}
+        } catch { XCTAssertEqual(error as? RuleError, RuleError("The list changed while you were working. Review the current list or reopen the editor before saving again.")) }
     }
 }
 

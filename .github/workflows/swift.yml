@@ -20,7 +20,7 @@ jobs:
         run: |
           useradd --create-home swift-tests
           chown -R swift-tests "$GITHUB_WORKSPACE"
-          su -s /bin/bash swift-tests -c 'swift test'
+          su -s /bin/bash swift-tests -c 'swift test -Xswiftc -warnings-as-errors'
   apple:
     runs-on: macos-14
     steps:
@@ -28,8 +28,8 @@ jobs:
       - run: python3 scripts/check-contracts.py
       - run: python3 scripts/test_contract_checks.py
       - run: python3 scripts/test_codex_sync_hook.py
-      - run: swift test
+      - run: swift test -Xswiftc -warnings-as-errors
       - name: Build iPhone simulator app
-        run: xcodebuild -project Apple/DotListPlus.xcodeproj -scheme DotListPlus -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/DotListPlus-iOS CODE_SIGNING_ALLOWED=NO build
+        run: xcodebuild -project Apple/DotListPlus.xcodeproj -scheme DotListPlus -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/DotListPlus-iOS CODE_SIGNING_ALLOWED=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES SWIFT_SUPPRESS_WARNINGS=NO build
       - name: Build native Mac app
-        run: xcodebuild -project Apple/DotListPlus.xcodeproj -scheme DotListPlus -destination 'platform=macOS' -derivedDataPath /tmp/DotListPlus-Mac CODE_SIGNING_ALLOWED=NO build
+        run: xcodebuild -project Apple/DotListPlus.xcodeproj -scheme DotListPlus -destination 'platform=macOS' -derivedDataPath /tmp/DotListPlus-Mac CODE_SIGNING_ALLOWED=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES SWIFT_SUPPRESS_WARNINGS=NO build

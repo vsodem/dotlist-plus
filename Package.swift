@@ -23,5 +23,8 @@ targets += [
     .testTarget(name: "DotListPlusAppleTests", dependencies: ["DotListPlusCloudKit", "DotListPlusUI", "DotListPlusApplication", "DotListPlusCore"])
 ]
 #endif
+for target in targets {
+    target.swiftSettings = (target.swiftSettings ?? []) + [.enableExperimentalFeature("StrictConcurrency")]
+}
 let package = Package(name: "DotListPlus", platforms: [.iOS(.v17), .macOS(.v14)],
-                      products: products, targets: targets)
+                      products: products, targets: targets, swiftLanguageVersions: [.v5])

@@ -48,7 +48,8 @@ public enum ListRules {
             next.selection = SelectionState()
         case .eraseCurrentList:
             next = ListState()
-        default:
+        case .addProject, .renameProject, .deleteProject, .addWorkItem, .renameWorkItem,
+             .updateRelationships, .deleteWorkItem, .reopenAction, .convertActionToOutcome:
             try WorkItemRules.apply(change, to: &next)
         }
         try WorkItemRules.validate(next)

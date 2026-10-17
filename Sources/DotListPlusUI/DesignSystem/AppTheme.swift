@@ -67,7 +67,7 @@ struct ThemeEffects {
 }
 
 private struct AppThemeKey: EnvironmentKey {
-    static let defaultValue = AppTheme.default
+    static var defaultValue: AppTheme { .default }
 }
 
 extension EnvironmentValues {

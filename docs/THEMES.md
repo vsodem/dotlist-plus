@@ -7,7 +7,7 @@ All app-owned visual values live in `Sources/DotListPlusUI/DesignSystem/`. Edit 
 The shipped theme is `ThemeConfiguration.defaultTheme` in `DesignSystem/ThemeConfiguration.swift`:
 
 ```swift
-public static let defaultTheme: AppTheme = .default // or .tron
+public static var defaultTheme: AppTheme { .default } // or .tron
 ```
 
 For a temporary preview, open **Product → Scheme → Edit Scheme → Run → Arguments → Environment Variables** in Xcode. Add `DOTLIST_THEME` with value `tron` or `default`, then run on iPhone Simulator or My Mac. Remove the variable to return to the developer default. An unknown value also uses that default. The override takes priority over the source default.
@@ -34,6 +34,8 @@ Native tabs, toolbars, menus, toggles, fields, forms, alerts and file pickers ke
 The app's `AccentColor` asset intentionally has no custom color, allowing Default to use Apple's system accent. Define custom theme colors in that theme’s file under `DesignSystem/Themes/`, rather than putting a second palette in the asset catalog. The launcher icon remains a platform asset, shared across themes.
 
 Apply `colors.text` directly to custom content such as Focus titles and work-row labels. Leave native form labels, footers, controls and navigation text on their system semantic colors. Do not put `foregroundStyle` above buttons or an entire screen: it overrides native tint and destructive-role colors.
+
+Theme definitions and defaults are read-only computed properties. Each access constructs a fresh `AppTheme`, avoiding shared non-`Sendable` values under complete concurrency checking. Keep this pattern when adding themes; do not use stored static theme constants or unsafe concurrency suppressions.
 
 ## Add a theme
 

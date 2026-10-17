@@ -2,7 +2,7 @@ import Foundation
 
 public enum ThemeConfiguration {
     /// Change this one value to ship a different theme.
-    public static let defaultTheme: AppTheme = .default
+    public static var defaultTheme: AppTheme { .default }
 
     /// In Xcode: Scheme → Run → Arguments → Environment Variables.
     /// DOTLIST_THEME=tron previews TRON without editing the shipped default.

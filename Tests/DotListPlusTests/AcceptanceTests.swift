@@ -18,6 +18,15 @@ final class AcceptanceTests: XCTestCase {
         state = try ListRules.transition(state, change, now: 1000)
     }
 
+    func assertRejected(_ original: ListState, _ change: ListChange, _ message: String,
+                        file: StaticString = #filePath, line: UInt = #line) {
+        var state = original
+        XCTAssertThrowsError(try step(&state, change), file: file, line: line) {
+            XCTAssertEqual($0 as? RuleError, RuleError(message), file: file, line: line)
+        }
+        XCTAssertEqual(state, original, file: file, line: line)
+    }
+
     func testLunchUnlocksWithoutChangingRemainingChain() throws {
         var state = list([action("Reply"), action("Groceries"), action("Cook", requires: ["Groceries"])])
         XCTAssertFalse(WorkItemRules.available(state.workItem("Cook")!, in: state))
@@ -120,7 +129,8 @@ final class AcceptanceTests: XCTestCase {
         XCTAssertEqual(state.actionOrder, ["Before"] + children.map(\.id) + ["After"])
         try step(&state, .addWorkItem(action("Later", parent: "Broad")))
         XCTAssertEqual(state.workItem("After")?.prerequisiteIDs, children.map(\.id))
-        XCTAssertThrowsError(try ListRules.transition(state, .convertActionToOutcome(children[0].id, titles: ["Nested"])))
+        assertRejected(state, .convertActionToOutcome(children[0].id, titles: ["Nested"]),
+                       "Only an unfinished action without a parent can be broken into required actions.")
     }
 
     func testOrdinaryAdditionAndTitleEditPreserveReviewSnapshot() throws {
@@ -153,7 +163,7 @@ final class AcceptanceTests: XCTestCase {
     func testBlockedUrgencyShowsAvailableAncestorsWithoutChangingState() throws {
         let state = list([action("A"), action("B", requires: ["A"]), action("C"), action("D", requires: ["B", "C"])])
         XCTAssertEqual(WorkItemRules.availablePrerequisites(of: "D", in: state).map(\.id), ["A", "C"])
-        XCTAssertThrowsError(try ListRules.transition(state, .makeUrgent("D")))
+        assertRejected(state, .makeUrgent("D"), "This action is blocked. Choose an available prerequisite to make urgent instead.")
         XCTAssertTrue(state.selection.dottedActionIDs.isEmpty)
     }
 
@@ -166,20 +176,41 @@ final class AcceptanceTests: XCTestCase {
     }
 
     func testStructuralChangesRequireIdle() throws {
-        var state = list([action("A"), action("B"), action("C")])
+        var state = list([action("A"), action("B"), action("C"),
+                          WorkItem(id: "Done", title: "Done", completedAt: 1000)])
+        state.projects = [Project(id: "P", title: "P")]
         try step(&state, .beginReview)
-        for change: ListChange in [.deleteWorkItem("C"), .updateRelationships("C", project: nil, parent: nil, prerequisites: ["A"]), .convertActionToOutcome("A", titles: ["Child"]), .reopenAction("A")] {
-            XCTAssertThrowsError(try ListRules.transition(state, change))
+        try step(&state, .addWorkItem(action("New")))
+        // Every command succeeds after Choose again. None invalidates the fixed candidates.
+        let changes: [ListChange] = [
+            .deleteWorkItem("New"),
+            .updateRelationships("New", project: nil, parent: nil, prerequisites: ["A"]),
+            .convertActionToOutcome("New", titles: ["Child"]), .reopenAction("Done"),
+            .addProject(Project(id: "Q", title: "Q")), .deleteProject("P"),
+            .addWorkItem(WorkItem(id: "G", title: "G", kind: .outcome)),
+            .addWorkItem(action("Dependent", requires: ["A"]))
+        ]
+        let idle = try ListRules.transition(state, .clearSelection)
+        for change in changes {
+            _ = try ListRules.transition(idle, change)
+            assertRejected(state, change, "Use Choose again before changing relationships, deleting work, or reopening an action.")
         }
-        XCTAssertThrowsError(try ListRules.transition(state, .completeNextAction))
+        assertRejected(state, .completeNextAction, "Only the next dotted action can be worked or completed.")
     }
 
     func testRejectsCircularMissingDuplicateSelfAndGroupPrerequisites() throws {
-        let state = list([action("A"), action("B", requires: ["A"]), WorkItem(id: "G", title: "Group", kind: .outcome)])
-        for prerequisites in [["B"], ["Missing"], ["A"], ["G"], ["B", "B"]] {
-            XCTAssertThrowsError(try ListRules.transition(state, .updateRelationships("A", project: nil, parent: nil, prerequisites: prerequisites)))
+        let state = list([action("A"), action("B", requires: ["A"]), action("C"),
+                          WorkItem(id: "G", title: "Group", kind: .outcome)])
+        let cases: [([String], String)] = [
+            (["B"], "These prerequisites would form a circle. No changes were saved."),
+            (["Missing"], "‘A’ has a missing prerequisite or a prerequisite that is not an action."),
+            (["A"], "An action cannot require itself."),
+            (["G"], "‘A’ has a missing prerequisite or a prerequisite that is not an action."),
+            (["C", "C"], "A prerequisite cannot be listed twice.")
+        ]
+        for (prerequisites, message) in cases {
+            assertRejected(state, .updateRelationships("A", project: nil, parent: nil, prerequisites: prerequisites), message)
         }
-        XCTAssertEqual(state.workItem("A")?.prerequisiteIDs, [])
     }
 
     func testRejectsCrossProjectLinksAndInvalidParents() throws {
@@ -187,8 +218,8 @@ final class AcceptanceTests: XCTestCase {
         try step(&state, .addProject(Project(id: "P", title: "P")))
         try step(&state, .addWorkItem(WorkItem(id: "A", title: "A", projectID: "P")))
         try step(&state, .addWorkItem(action("B")))
-        XCTAssertThrowsError(try ListRules.transition(state, .updateRelationships("B", project: nil, parent: nil, prerequisites: ["A"])))
-        XCTAssertThrowsError(try ListRules.transition(state, .updateRelationships("B", project: nil, parent: "A", prerequisites: [])))
+        assertRejected(state, .updateRelationships("B", project: nil, parent: nil, prerequisites: ["A"]), "Prerequisites must belong to the same project.")
+        assertRejected(state, .updateRelationships("B", project: nil, parent: "A", prerequisites: []), "‘B’ needs a valid outcome as its parent.")
     }
 
     func testDeletionAndReopeningProtectReferences() throws {
@@ -197,10 +228,10 @@ final class AcceptanceTests: XCTestCase {
         try step(&state, .completeNextAction)
         XCTAssertNotNil(state.workItem("A")?.completedAt)
         XCTAssertTrue(WorkItemRules.available(state.workItem("B")!, in: state))
-        XCTAssertThrowsError(try ListRules.transition(state, .deleteWorkItem("A")))
+        assertRejected(state, .deleteWorkItem("A"), "Another action requires this one. Remove that prerequisite link before deleting it.")
         try step(&state, .beginReview)
         try step(&state, .completeNextAction)
-        XCTAssertThrowsError(try ListRules.transition(state, .reopenAction("A")))
+        assertRejected(state, .reopenAction("A"), "Reopen ‘B’ before reopening its prerequisite ‘A’.")
         try step(&state, .reopenAction("B"))
         try step(&state, .reopenAction("A"))
         XCTAssertEqual(state.actionOrder, ["B", "A"])
@@ -209,7 +240,7 @@ final class AcceptanceTests: XCTestCase {
 
     func testNonemptyOutcomeCannotBeDeleted() throws {
         let state = list([WorkItem(id: "G", title: "Group", kind: .outcome), action("A", parent: "G")])
-        XCTAssertThrowsError(try ListRules.transition(state, .deleteWorkItem("G")))
+        assertRejected(state, .deleteWorkItem("G"), "Move or remove this outcome's required actions before deleting it.")
     }
 
     func testResumeReviewAndExecutionExactly() throws {
@@ -229,14 +260,24 @@ final class AcceptanceTests: XCTestCase {
         let original = list([action("A"), action("B")])
         var object = try XCTUnwrap(JSONSerialization.jsonObject(with: BackupCodec.encode(original)) as? [String: Any])
         var payload = try XCTUnwrap(object["payload"] as? [String: Any])
-        for invalid in ["not a selection" as Any, ["phase": "reviewing", "dottedActionIDs": ["Missing"], "candidateActionIDs": ["A"], "candidateIndex": 99] as Any] {
-            payload["selection"] = invalid
-            object["payload"] = payload
-            XCTAssertThrowsError(try BackupCodec.decode(JSONSerialization.data(withJSONObject: object)))
+        payload["selection"] = "not a selection"
+        object["payload"] = payload
+        XCTAssertThrowsError(try BackupCodec.decode(JSONSerialization.data(withJSONObject: object))) {
+            guard case DecodingError.typeMismatch = $0 else { return XCTFail("Wrong error: \($0)") }
         }
+        var invalidSelection = SelectionState()
+        invalidSelection.dottedActionIDs = ["A"] // Only idle's empty-chain rule is violated.
+        payload["selection"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(invalidSelection))
+        object["payload"] = payload
+        XCTAssertThrowsError(try BackupCodec.decode(JSONSerialization.data(withJSONObject: object))) {
+            XCTAssertEqual($0 as? RuleError, RuleError("The saved selection is invalid. Start a new review; your work items are preserved."))
+        }
+        payload["selection"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(original.selection))
         payload["actionOrder"] = ["Missing"]
         object["payload"] = payload
-        XCTAssertThrowsError(try BackupCodec.decode(JSONSerialization.data(withJSONObject: object)))
+        XCTAssertThrowsError(try BackupCodec.decode(JSONSerialization.data(withJSONObject: object))) {
+            XCTAssertEqual($0 as? RuleError, RuleError("The action order must contain every unfinished action exactly once."))
+        }
     }
 
     func testReviewBenchmarkIsDistinctFromNextAction() throws {

@@ -55,7 +55,7 @@ final class StorageTests: XCTestCase {
         do {
             try await storage.save(invalid, preserveRecovery: false)
             XCTFail("Invalid inactive account should reject the whole transaction")
-        } catch {}
+        } catch { XCTAssertEqual(error as? RuleError, RuleError("The action order must contain every unfinished action exactly once.")) }
         let afterFailure = try await storage.load()
         XCTAssertEqual(afterFailure, lists)
         try await storage.save(LocalStoreState(), preserveRecovery: true)
@@ -96,14 +96,24 @@ final class StorageTests: XCTestCase {
     func testIncompatibleStoreBlocksLoadAndEveryOrdinarySave() async throws {
         let directory = try directory()
         let url = directory.appendingPathComponent(ProductIdentity.localFile)
-        let candidates = [Data("corrupt".utf8), try BackupCodec.encode(ListState()),
-                          try JSONEncoder().encode(LocalStoreState())]
-        for bytes in candidates {
+        let candidates: [(Data, (Error) -> Void)] = [
+            (Data("corrupt".utf8), { error in
+                guard case DecodingError.dataCorrupted = error else { return XCTFail("Wrong error: \(error)") }
+            }),
+            (try BackupCodec.encode(ListState()), { error in
+                XCTAssertEqual(error as? RuleError, RuleError("This file is not a supported Dot List Plus localStore version. The original data was kept."))
+            }),
+            (try JSONEncoder().encode(LocalStoreState()), { error in
+                guard case DecodingError.keyNotFound(let key, _) = error else { return XCTFail("Wrong error: \(error)") }
+                XCTAssertEqual(key.stringValue, "productID")
+            })
+        ]
+        for (bytes, checkError) in candidates {
             try bytes.write(to: url)
             let storage = JSONLocalStorage(directory: directory)
-            do { _ = try await storage.load(); XCTFail("Incompatible store must block load") } catch {}
+            do { _ = try await storage.load(); XCTFail("Incompatible store must block load") } catch { checkError(error) }
             for recovery in [false, true] {
-                do { try await storage.save(LocalStoreState(), preserveRecovery: recovery); XCTFail("Must preserve incompatible store") } catch {}
+                do { try await storage.save(LocalStoreState(), preserveRecovery: recovery); XCTFail("Must preserve incompatible store") } catch { checkError(error) }
                 XCTAssertEqual(try Data(contentsOf: url), bytes)
             }
         }
@@ -118,7 +128,7 @@ final class StorageTests: XCTestCase {
         do {
             _ = try await JSONLocalStorage(directory: directory).load()
             XCTFail("Permission failure must stop loading")
-        } catch {}
+        } catch { XCTAssertEqual((error as? CocoaError)?.code, .fileReadNoPermission) }
     }
 
     func testInvalidStoredAccountFailsLoadWithoutChangingBytes() async throws {
@@ -133,7 +143,7 @@ final class StorageTests: XCTestCase {
         do {
             _ = try await JSONLocalStorage(directory: directory).load()
             XCTFail("Stored inactive accounts must be validated")
-        } catch {}
+        } catch { XCTAssertEqual(error as? RuleError, RuleError("The action order must contain every unfinished action exactly once.")) }
         XCTAssertEqual(try Data(contentsOf: envelope), bytes)
     }
 
@@ -151,7 +161,7 @@ final class StorageTests: XCTestCase {
             do {
                 try await storage.save(LocalStoreState(), preserveRecovery: preserveRecovery)
                 XCTFail("Read-only directory must reject the replacement")
-            } catch {}
+            } catch { XCTAssertEqual((error as? CocoaError)?.code, .fileWriteNoPermission) }
             XCTAssertEqual(try Data(contentsOf: envelope), bytes)
         }
     }

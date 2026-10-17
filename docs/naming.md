@@ -39,6 +39,6 @@ Use **Dot List Plus** in displayed names, **DotListPlus** in code identifiers an
 
 ## Historical and framework exceptions
 
-The checker has an explicit file allowlist for this mapping, the original research report, three research notes and the dated iCloud implementation plan. Those documents retain source terminology for attribution and are marked historical. Their retired-code links are pinned to commit `4d96ce399c4a138288ffb6acb4459eacc34cb266`; they are not current instructions.
+The checker has an explicit file allowlist for this mapping, the original research report, two research notes and the dated iCloud implementation plan. Those documents retain source terminology for attribution and are marked historical; they are not current instructions.
 
 Swift `Task`, task groups, `addTask`, SwiftUI `.task`, `Group`, Xcode `PBXGroup` and SDK API names retain framework spelling. Negative tests retain narrowly identified old-format fixtures and forbidden-name examples to prove rejection. Git hooks use “task” in its ordinary automation sense. The repository name and immutable GitHub URLs remain unchanged. No production alias keeps the old domain names or old serialized fields working.

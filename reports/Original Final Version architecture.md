@@ -1,4 +1,4 @@
-> Historical reference. Source terminology is retained; this is not the current app specification. See [current product rules](../docs/APP_RULES.md). [Retired code at its final pre-rename commit](https://github.com/vsodem/dotlist-plus/blob/4d96ce399c4a138288ffb6acb4459eacc34cb266/index.html).
+> Historical reference. Source terminology is retained; this is not the current app specification. See [current product rules](../docs/APP_RULES.md).
 
 # Keep original Final Version easy to edit
 
@@ -22,7 +22,7 @@ Forster's FAQ says ordinary incoming tasks join the bottom and that, after an in
 
 **Constructed interruption and restart example:** a phone call interrupts a selected task. After the call, resume there. If the call changes what needs doing, reconsider the selection. That does not require deleting the task list. The first behavior follows the FAQ; the distinction between selection and stored data is an application design interpretation. ([FAQ](https://markforster.squarespace.com/final-version-faqs/))
 
-For the app, four operations need distinct names: resume saved work, reconsider selected dots, rewrite task entries, and erase all tasks. **No mandatory daily restart was established by the sources reviewed.** A daily restart would therefore be a personal adaptation requiring its own explanation. The current Reset control performs the fourth operation: it empties the list after confirmation. It does not just clear dots. README currently says Reset reloads the demo, which disagrees with the code. ([Reset implementation](/Users/vsodem/Experiments/dotlist-plus/index.html:728), [README](/Users/vsodem/Experiments/dotlist-plus/README.md:17))
+For the app, four operations need distinct names: resume saved work, reconsider selected dots, rewrite task entries, and erase all tasks. **No mandatory daily restart was established by the sources reviewed.** A daily restart would therefore be a personal adaptation requiring its own explanation.
 
 ## Later names describe different decisions
 
@@ -38,27 +38,4 @@ The architecture consequence is specific: an FVP implementation must distinguish
 
 Names also need attribution checks. Forster's 2011 post containing “Perfect at last!” predates release and is not the 2015 FVP specification. No-List FVP is distinct from No-Question FVP. A forum post titled “Fast Final Version” was written by the reader nuntym, not Forster. ([2011 post](https://markforster.squarespace.com/blog/2011/10/14/final-version-perfect-at-last.html), [No-List FVP](https://markforster.squarespace.com/blog/2016/6/28/more-about-no-list-fvp.html), [Reader proposal](https://markforster.squarespace.com/fv-forum/post/2619857))
 
-## The current app has small, identifiable edit points
-
-The inspected checkout is the single-file `index.html` demo. No current `plus.html`, native app source, or test suite was available. The folder name does not establish that a separate Plus implementation exists. The file already separates state, algorithm, rendering, and events, which is adequate for modest personal changes. ([App structure](/Users/vsodem/Experiments/dotlist-plus/index.html:270), [README](/Users/vsodem/Experiments/dotlist-plus/README.md:5))
-
-| Concern | Current behavior and smallest edit point |
-|---|---|
-| Stored state | Task array order is list order. Tasks store identity, text, dot status/order, and timestamps; mode and review cursor are saved with them. Edit [state and persistence](/Users/vsodem/Experiments/dotlist-plus/index.html:287). |
-| Starting selection | The first active task receives dot order zero. Review starts below the highest-order active dot. Edit [recomputeAnchor](/Users/vsodem/Experiments/dotlist-plus/index.html:378) and [startReview](/Users/vsodem/Experiments/dotlist-plus/index.html:608). |
-| Review decisions | Yes adds a dot and changes the benchmark; No advances past the candidate without moving it. Scanning never wraps. Edit [candidate selection](/Users/vsodem/Experiments/dotlist-plus/index.html:392), [Yes](/Users/vsodem/Experiments/dotlist-plus/index.html:623), and [No](/Users/vsodem/Experiments/dotlist-plus/index.html:640). |
-| Comparison wording | The prompt currently uses *more than*. Edit [renderPrompt](/Users/vsodem/Experiments/dotlist-plus/index.html:478), then align help text and README. |
-| Execution and unfinished work | Highest dot order runs next. “Started, not done” resolves the old entry and appends a fresh undotted copy. Remaining dots execute directly. Edit [completeCurrent](/Users/vsodem/Experiments/dotlist-plus/index.html:660). |
-| Urgent additions | The appended task gets the highest dot order. During execution, it immediately replaces the displayed next action. During review, it changes the benchmark while leaving the candidate cursor in place. Edit [addTask](/Users/vsodem/Experiments/dotlist-plus/index.html:570). |
-| Manual exceptions | End review starts execution early; per-task completion allows out-of-order action. Edit [review controls](/Users/vsodem/Experiments/dotlist-plus/index.html:482) and [completeTask](/Users/vsodem/Experiments/dotlist-plus/index.html:687). |
-| Resume and erase | Browser storage retains dots, mode, and cursor. Boot repairs the initial dot; there is no day-boundary reset. Edit [load/save](/Users/vsodem/Experiments/dotlist-plus/index.html:330), [boot](/Users/vsodem/Experiments/dotlist-plus/index.html:787), and [resetAll](/Users/vsodem/Experiments/dotlist-plus/index.html:728). |
-
-The urgent-add comment promises action after the current task, but the code has no separate record of an in-progress task: it changes next-up immediately. Also, `startReview` can reconsider below a surviving dot, but execution controls do not expose that operation. These details matter when choosing button labels and expected behavior. ([Urgent implementation](/Users/vsodem/Experiments/dotlist-plus/index.html:575), [Execution controls](/Users/vsodem/Experiments/dotlist-plus/index.html:495))
-
-## Proposed changes should stay small and explicit
-
-**Proposals only:** use the original question, offer an explicit reconsider-selection control, and rename or describe Reset as erasing the list. Retain the existing normal execution order. A reconsider control could use the existing `startReview` function for review below the remaining dot; a full fresh selection needs separate handling of existing dots. These are different operations and should not share an ambiguous button.
-
-Keep this report as the editable rule reference and the table as its code map. There is no demonstrated need to extract a framework. Before changing behavior, check a few concrete cases: skipped candidates advance, earlier dots survive Yes, unfinished copies append undotted, urgent additions change next-up, and saved state resumes correctly. Six narrow in-memory assertions passed during research; they covered selection, reverse execution, unfinished work, urgent addition, and Reset. They did not test browser rendering or persistence.
-
-Several Squarespace pages failed direct retrieval; their available author text was retrieved through search indexing, and truncated FAQ continuations were not treated as evidence. Code observations refer to this checkout on October 15, 2026. Neither a separate Plus implementation nor a future adaptation is represented as completed work.
+Several Squarespace pages failed direct retrieval; their available author text was retrieved through search indexing, and truncated FAQ continuations were not treated as evidence.

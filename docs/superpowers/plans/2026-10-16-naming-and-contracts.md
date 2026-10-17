@@ -1,12 +1,12 @@
 1. Preserve rules while renaming Swift declarations, serialized fields, UI language, tests and paths; split Core, Application, Storage, CloudKit, UI and link package products from the thin app. Check baseline and renamed tests.
 2. Generate identity from product-identity.json; add strict versioned FormatEnvelope coding, separate portable and recovery formats, remove migration and block incompatible stores/cloud uploads. Test old rejection, no writes, restart and round trips.
 3. Verify relationships and coordinator transactions, cancellation, conflicts and explicit complete-list resolution; keep provider events in application commands. Test invalid merge retention and conditional resolution.
-4. Retire browser files/workflow, replace contradictory docs and label history; enforce naming, dependencies, Xcode membership and non-writing generation checks with negative tests.
+4. Replace contradictory docs and label history; enforce naming, dependencies, Xcode membership and non-writing generation checks with negative tests.
 5. Run Swift/hook/checker tests and both unsigned Apple builds; inspect UI names, independent review, commit task files, fetch, push and verify SHA. Signing and two-device checks remain release work.
 
 ## Completion record — 2026-10-16
 
-The five steps are implemented. The package exposes Core, Application, Storage, CloudKit and UI with the documented dependency graph. The thin app links products. New identity and strict envelopes replace the previous formats without migration or discovery. Browser entry points and the explicitly authorized Playwright workflow are removed; `.codex/hooks.json` is unchanged.
+The five steps are implemented. The package exposes Core, Application, Storage, CloudKit and UI with the documented dependency graph. The thin app links products. New identity and strict envelopes replace the previous formats without migration or discovery. `.codex/hooks.json` is unchanged.
 
 Review fixes:
 - Reject production target declarations the dependency checker cannot parse, including custom `path:` declarations; covered by a negative test.

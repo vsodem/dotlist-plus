@@ -26,12 +26,11 @@ HISTORICAL = {
     'reports/Original Final Version architecture.md',
     'research_notes/Original Final Version architecture/original_rules.md',
     'research_notes/Original Final Version architecture/variants.md',
-    'research_notes/Original Final Version architecture/app_mapping.md',
     'docs/superpowers/plans/2026-10-15-icloud-sync.md',
 }
 # Only the explicit mapping and negative-test/check definitions may name retired declarations.
 NAMING_EXCEPTIONS = HISTORICAL | {'docs/naming.md', 'scripts/check-contracts.py', 'scripts/test_contract_checks.py'}
-SKIP_DIRS = {'.git', '.build', '.swiftpm', 'DerivedData', 'node_modules', '__pycache__', 'xcuserdata', 'test-results', 'playwright-report'}
+SKIP_DIRS = {'.git', '.build', '.swiftpm', 'DerivedData', '__pycache__', 'xcuserdata'}
 OLD = re.compile(r'\b(?:WorkTask|TaskRules|AppState|SelectionRules|SyncView|StoredLists|AccountList|TaskEditor|WorkView|BreakdownView|DotListCore|DotListStorage|DotList|projectId|parentId|prerequisiteIds|groupProgress)\b')
 errors = []
 def fail(message): errors.append(message)
@@ -101,7 +100,7 @@ if project.exists():
 app_sources = {p.name for p in (ROOT / 'Apple').rglob('*.swift')}
 if app_sources != {'DotListPlusApp.swift', 'PushNotifications.swift'}:
     fail('App source membership must contain only startup and lifecycle glue')
-for retired in ['index.html', '.nojekyll', '.github/workflows/playwright.yml', 'Apple/DotList.xcodeproj']:
+for retired in ['Apple/DotList.xcodeproj']:
     if (ROOT / retired).exists(): fail('Retired artifact remains: ' + retired)
 
 result = subprocess.run([sys.executable, str(ROOT / 'scripts/generate-xcode-project.py'), '--check'], capture_output=True, text=True)

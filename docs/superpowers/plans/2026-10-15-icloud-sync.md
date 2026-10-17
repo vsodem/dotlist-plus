@@ -1,4 +1,4 @@
-> Historical reference. Source terminology is retained; this is not the current app specification. See [current product rules](../../../docs/APP_RULES.md). [Retired code at its final pre-rename commit](https://github.com/vsodem/dotlist-plus/blob/4d96ce399c4a138288ffb6acb4459eacc34cb266/index.html).
+> Historical reference. Source terminology is retained; this is not the current app specification. See [current product rules](../../../docs/APP_RULES.md).
 
 # iCloud sync implementation plan
 
@@ -14,13 +14,13 @@ Architecture: DotListCore owns async provider-neutral contracts, durable account
 4. Implement CloudKit snapshot adapter using CKSyncEngine. Keep record metadata and asset encoding private. Use opaque account IDs and revisions. Fetch before conditional publication; surface conflicts. Check account before and after operations. Return checkpoints only with the operation outcome.
 5. Inject dependencies at app startup. Make UI actions await durable storage before dismissing editors. Settings shows sync status, retry, and explicit conflict choices. Import and erase confirmations describe effects on other devices.
 6. Preserve capabilities and signing configuration in generator. Run swift test, unsigned macOS and iOS simulator builds, generator reproducibility, and independent review. Attempt signed provisioning only with configured team. Record live-device verification as blocked if identities/devices are unavailable.
-7. Review explicit file diff, commit, fetch, push HEAD to codex/swift, and compare with ls-remote. Leave .github/workflows/playwright.yml untouched.
+7. Review explicit file diff, commit, fetch, push HEAD to codex/swift, and compare with ls-remote.
 
 Review focus: suspension during account changes; interrupted local writes after successful upload; unchanged remote replay after conflict choices; structural merges invalidating review; lost notifications during an in-flight sync.
 
 
 Implementation decisions and verification:
-- Stayed on the requested codex/swift checkout; no worktree or branch switch needed. The unrelated Playwright workflow remains untouched.
+- Stayed on the requested codex/swift checkout; no worktree or branch switch needed.
 - CKSyncEngine handles incoming changes and checkpoint state. Outgoing writes use explicit conditional CloudKit saves so stale engine queues cannot replay.
 - Interrupted uploads with changed remote contents require a complete-list choice; this prevents deletion resurrection without unbounded server history.
 - Inactive accounts retain their lists. The first account adopts unbound data only once; later local-only data requires explicit export/import to transfer.

@@ -4,7 +4,7 @@ This is the authoritative, editable behavior specification. Change a rule and it
 
 ## 1. Decisions and scope
 
-The product is **Dot List Plus**. Use **Project / Outcome / Action**. iOS and macOS share rules, storage/sync contracts and screens where appropriate, with native navigation, windows, menus and shortcuts. Preserve native behavior except for the explicit fresh identity, strict formats, naming and boundaries described here. The browser demo is retired.
+The product is **Dot List Plus**. Use **Project / Outcome / Action**. iOS and macOS share rules, storage/sync contracts and screens where appropriate, with native navigation, windows, menus and shortcuts. Preserve native behavior except for the explicit fresh identity, strict formats, naming and boundaries described here.
 
 Containment describes a result; prerequisites describe execution constraints. Neither a project nor an outcome receives dots. No nested outcomes, cross-project prerequisites, alternative prerequisites, automatic prerequisite generation, recurring work or shared-account collaboration is supported.
 

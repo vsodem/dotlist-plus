@@ -43,7 +43,7 @@ Portable exports use `dot-list-plus-backup.json` and contain one list. Recovery 
 
 Edits save locally before upload. Save failure preserves the visible state; network failure keeps work pending. Accounts remain separate. Independent edits merge; incompatible changes retain both versions until explicit resolution. Choosing a complete version removes changes unique to the other, with a recovery copy retained. Invalid relationships are never silently repaired.
 
-The browser demo and browser integration are retired. Historical research and plans retain source terminology and pinned links; they are not current-use instructions.
+Historical research and plans retain source terminology; they are not current-use instructions.
 
 ## Verify
 

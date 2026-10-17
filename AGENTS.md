@@ -2,9 +2,8 @@
 
 ## GitHub is the source of truth
 
-These rules apply only to this project. The canonical version is GitHub's
-`origin/codex/swift`. Work is not complete until its changes are committed,
-pushed to that branch, and verified against GitHub.
+The canonical version is GitHub's `origin/codex/swift`. Work is not complete 
+until its changes are committed, pushed to that branch, and verified against GitHub.
 
 ### Git execution access
 

@@ -1,6 +1,6 @@
 # Editing themes
 
-All app-owned visual values live in `Sources/DotListPlusUI/DesignSystem/`. Edit these Swift files by hand or point Claude Code at this guide. No dependency installation or project regeneration is needed when adding a file inside that package folder.
+All app-owned visual values live in `Sources/DotListPlusUI/DesignSystem/`. Edit these Swift files by hand or point an agent at this guide. No dependency installation or project regeneration is needed when adding a file inside that package folder.
 
 ## Choose a theme
 
